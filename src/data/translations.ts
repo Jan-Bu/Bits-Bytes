@@ -113,6 +113,12 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
         description: 'User-centered design that creates engaging and intuitive digital experiences.'
       }
     },
+    pricing: {
+      intro: {
+        title: "Pricing.txt",
+      },
+      text: 'At our studio, you won’t find standard packages or fixed prices. Every project is unique and deserves an individual approach.\n\n We design websites, graphics, branding, and print materials fully tailored to your needs. Whether you’re looking for a simple website, a complete brand identity, or custom print solutions, we make sure everything fits your vision.\n\n Before we start, we always agree on the details, so you know exactly what to expect, with no unpleasant surprises.'
+    },
     blog: {
       title: 'Latest Blog Posts',
       post1: {
@@ -236,7 +242,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`
       team: {
         title: 'Náš tým',
         "bits": "Bits – Design, frontend",
-      "bytes": "Bytes – Komunikace, backend"
+        "bytes": "Bytes – Komunikace, backend"
       },
       cta: {
         button: 'Napište nám'
