@@ -1,3 +1,4 @@
+import { b } from 'framer-motion/client';
 import { Translations } from '../types';
 
 export const translations: Translations = {
@@ -19,8 +20,11 @@ export const translations: Translations = {
       intro: {
         title: 'About Us',
         content: `We’re Bits&Bytes, a duo that gives brands both a face and a life.
+
 We create graphics, websites, and full visual identities – from logos to complete brand presentations.
+
 We also handle the print side: business cards, flyers, posters, stickers, banners, packaging, catalogs, and more.
+
 We work simply, honestly, and with a focus on results that make sense and work in the real world.`
       },
       services: {
@@ -56,32 +60,41 @@ From logo to print, everything under one roof, with sense and style.
 
 No endless back-and-forth between designer, developer, and printer.
 With us, you get everything from one place – fast, smooth, and without wasted energy.
-Less time, more results.`
+Less time, more results.`,
+        anvil: '3D Model',
+        seo: 'SEO'
       },
       mission: {
         title: 'Our Mission',
         content: `Bit draws. Byte codes. Together, they help brands look the way they deserve to.
+
 We create visual identities from logo to website. They do not only look good but also work in real life.
 We do not use templates. We do not make excuses. We avoid unnecessary complexity.
 We understand the world of small businesses. Time and budget are always limited.
 That is why we design solutions that bring joy and deliver results.
+
 We speak like humans. We work like robots. Carefully, reliably and with full focus.`
       },
       vision: {
         title: 'Our Vision',
         content: `Bit wants websites to stop being ugly. Byte wants them to make sense. We want both.
+
 We believe even the smallest brand deserves to look great. No agency clutter, no templates, no inflated egos.
+
 Design should be functional, clear and personal.
-That is why we do not mass-produce our work. We build everything from scratch. Thoughtfully, carefully and with a human touch.
+That is why we do not mass-produce our work. We build everything from scratch. 
+
+Thoughtfully, carefully and with a human touch.
 Every project deserves a bit of Bit’s precision and a byte of Byte’s creativity.`
       },
       team: {
         title: 'Our Team',
-        members: `Bits – Design, frontend
-Bytes – Communication, backend`
+        "bits": "Bits – Design, frontend",
+        "bytes": "Bytes – Communication, backend"
       },
-      cta: {
-        button: 'Let’s talk'
+      button: {
+        back: 'TO HOME PAGE',
+        contact: 'CONTACT US'
       }
     }
     ,
@@ -222,8 +235,8 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`
       },
       team: {
         title: 'Náš tým',
-        members: `Bits – Design, frontend
-Bytes – Komunikace, backend`
+        "bits": "Bits – Design, frontend",
+      "bytes": "Bytes – Komunikace, backend"
       },
       cta: {
         button: 'Napište nám'
