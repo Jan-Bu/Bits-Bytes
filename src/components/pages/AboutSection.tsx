@@ -159,7 +159,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
                 style={{ width: '120px', height: '120px' }}
                 onPointerDown={() => {
                   setAnvilHintVisible(false);
-                  // reset hint po 5s
+
                   setTimeout(() => {
                     setAnvilHintVisible(true);
                   }, 5000);
