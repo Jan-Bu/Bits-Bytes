@@ -74,55 +74,62 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       />
 
       {/* === INTRO === */}
-      <section
-        id="about-intro"
-        data-animate
-        className={`min-h-screen flex items-center justify-center transition-all duration-1000 ${visibleSections.has('about-intro') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}
-      >
-        <div className="container mx-auto px-6 text-center">
-          <h1
-            className="font-bold text-[#FFED29]
-             text-[12vw] sm:text-6xl md:text-8xl xl:text-[10rem]
-             leading-[0.95]"
-            style={{
-              textShadow: `
-      -2vw -2vw 0 #000, 
-      -4vw -4vw 0 rgba(0, 0, 0, 0.4)
-    `
-            }}
-          >
-            {t('about.intro.title')}
-          </h1>
-          <p
-            className="mt-2 max-w-4xl mx-auto whitespace-pre-line"
-            style={{
-              fontSize: 'clamp(1rem, 3vmin, 2.25rem)',
-              lineHeight: '1.35',
-            }}
-          >
-            {t('about.intro.content')}
-          </p>
-        </div>
+<section
+  id="about-intro"
+  data-animate
+  style={{
+    paddingTop: 'clamp(40px, 10vh, 120px)', 
+  }}
+  className={`min-h-screen flex items-center justify-center transition-all duration-1000 ${
+    visibleSections.has('about-intro') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+  }`}
+>
+  <div className="container mx-auto px-6 text-center">
+    <h1
+      className="font-bold text-[#FFED29]
+        text-[clamp(2.5rem,8vw,10rem)]
+        leading-[0.95]"
+      style={{
+        textShadow: `
+          calc(clamp(2px, 0.8vw, 25px) * -1)
+          calc(clamp(2px, 0.8vw, 25px) * -1)
+          0 #000,
+          calc(clamp(4px, 1.6vw, 50px) * -1)
+          calc(clamp(4px, 1.6vw, 50px) * -1)
+          0 rgba(0, 0, 0, 0.4)
+        `,
+      }}
+    >
+      {t('about.intro.title')}
+    </h1>
 
-        <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50">
-          <img
-            src="/Bits_arrow.gif"
-            alt="Arrow Down"
-            className="object-contain cursor-pointer select-none"
-            style={{
-              width: 'clamp(140px, 20vmin, 320px)', // taky podle menšího rozměru
-              height: 'clamp(140px, 20vmin, 320px)',
-            }}
-            onClick={() => {
-              playSound();
-              document.getElementById('about-skills')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
-        </div>
-      </section>
+    <p
+      className="mt-2 max-w-4xl mx-auto whitespace-pre-line"
+      style={{
+        fontSize: 'clamp(1rem, 3vmin, 2.25rem)',
+        lineHeight: '1.35',
+      }}
+    >
+      {t('about.intro.content')}
+    </p>
+  </div>
 
-
+  <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50">
+    <img
+      src="/Bits_arrow.gif"
+      alt="Arrow Down"
+      className="object-contain cursor-pointer select-none"
+      style={{
+        width: 'clamp(140px, 20vmin, 320px)',
+        height: 'clamp(140px, 20vmin, 320px)',
+      }}
+      onClick={() => {
+        playSound();
+        document.getElementById('about-skills')?.scrollIntoView({ behavior: 'smooth' });
+      }}
+    />
+  </div>
+</section>
 
       {/* === SKILLS === */}
       <section
