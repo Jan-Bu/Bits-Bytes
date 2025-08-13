@@ -2,6 +2,13 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      screens: {
+        'xs': '360px', // menší Android mobily
+        'ms': '400px', // větší Android mobily
+        'ts': '600px', // malé tablety
+        'tl': '768px', // velké tablety
+      },
+
       fontFamily: {
         jersey: ['"Jersey 25"', 'cursive'],
       },

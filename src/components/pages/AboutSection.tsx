@@ -82,28 +82,38 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       >
         <div className="container mx-auto px-6 text-center">
           <h1
-            className="text-7xl md:text-[10rem] font-bold text-[#FFED29]"
+            className="font-bold text-[#FFED29]
+             text-[12vw] sm:text-6xl md:text-8xl xl:text-[10rem]
+             leading-[0.95]"
             style={{
               textShadow: `
-                -25px -25px 0 #000,
-                -50px -50px 0 rgba(0, 0, 0, 0.4)
-              `,
+      -2vw -2vw 0 #000, 
+      -4vw -4vw 0 rgba(0, 0, 0, 0.4)
+    `
             }}
           >
             {t('about.intro.title')}
           </h1>
-          <p className="text-3xl md:text-4xl mt-2 max-w-4xl mx-auto whitespace-pre-line">
+          <p
+            className="mt-2 max-w-4xl mx-auto whitespace-pre-line"
+            style={{
+              fontSize: 'clamp(1rem, 3vmin, 2.25rem)',
+              lineHeight: '1.35',
+            }}
+          >
             {t('about.intro.content')}
           </p>
         </div>
-        <div
-          className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50"
-          style={{ width: '320px', height: '320px' }}
-        >
+
+        <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50">
           <img
             src="/Bits_arrow.gif"
             alt="Arrow Down"
-            className="w-[320px] h-[320px] object-contain cursor-pointer"
+            className="object-contain cursor-pointer select-none"
+            style={{
+              width: 'clamp(140px, 20vmin, 320px)', // taky podle menšího rozměru
+              height: 'clamp(140px, 20vmin, 320px)',
+            }}
             onClick={() => {
               playSound();
               document.getElementById('about-skills')?.scrollIntoView({ behavior: 'smooth' });
@@ -111,6 +121,8 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           />
         </div>
       </section>
+
+
 
       {/* === SKILLS === */}
       <section
