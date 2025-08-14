@@ -114,7 +114,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
         </div>
 
         {/* Panáček */}
-        <div className="mt-6 md:mt-10 translate-y-[10vh] md:translate-y-0">
+        <div className="mt-6 md:mt-10 translate-y-[10vh] md:translate-y-[10vh]">
           <img
             src="/Bits_arrow.gif"
             alt="Arrow Down"
