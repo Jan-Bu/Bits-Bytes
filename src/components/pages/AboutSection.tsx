@@ -59,16 +59,28 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const setVh = () =>
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    setVh();
+    window.addEventListener('resize', setVh);
+    return () => window.removeEventListener('resize', setVh);
+  }, []);
+
   return (
     <div className="relative overflow-y-auto scroll-smooth text-white font-jersey">
       {/* FIXED background */}
       <div
-        className="fixed inset-0 -z-10"
+        className="
+        fixed inset-0 -z-10
+        w-screen h-[calc(var(--vh,1vh)*100)] md:h-screen
+        pointer-events-none
+      "
         style={{
           background:
             'radial-gradient(circle at center, #231466ff 0%, #130b2eff 40%, #090510ff 80%, #000000 100%)',
-          backgroundAttachment: 'fixed',
           backgroundRepeat: 'no-repeat',
+          backgroundPosition: '50% 50%',
           backgroundSize: 'cover',
         }}
       />
