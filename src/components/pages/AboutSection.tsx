@@ -223,7 +223,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           }`}
       >
         {/* Nadpis + text */}
-        <div className="container mx-auto px-6 text-center translate-y-[-4vh] md:translate-y-0">
+        <div className="container mx-auto px-6 text-center translate-y-[3vh] md:translate-y-[2vh] lg:translate-y-0">
           <h1
             className="font-bold text-[#FFED29]
         text-[clamp(2.5rem,8vw,10rem)]
@@ -283,7 +283,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   "
         >
           {/* 1) TEXT FULL */}
-          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-5 overflow-auto h-full">
+          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-3 h-full">
             <h2 className="text-[clamp(2.1rem,8vw,2.8rem)] font-bold text-yellow-300 leading-tight">
               {t('about.skills.title')}
             </h2>
