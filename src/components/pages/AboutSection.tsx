@@ -246,7 +246,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   "
         >
           {/* 1) TEXT FULL */}
-          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-5 overflow-auto h-full">
+          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-2 overflow-auto h-full">
             <h2 className="text-[clamp(2.1rem,8vw,2.8rem)] font-bold text-yellow-300 leading-tight">
               {t('about.skills.title')}
             </h2>
