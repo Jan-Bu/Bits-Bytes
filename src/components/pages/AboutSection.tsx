@@ -28,6 +28,83 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   const [anvilHintVisible, setAnvilHintVisible] = useState(true);
   const navigate = useNavigate();
 
+  // === PLYNULÝ SCROLL (klik + wheel) pouze pro About ===
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isAnimatingRef = useRef(false);
+  const DURATION_MS = 800; // << zpomal/urychli podle potřeby
+
+  const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+  const getSections = (): HTMLElement[] =>
+    Array.from(document.querySelectorAll('section[id]')) as HTMLElement[];
+
+  const centerTargetFor = (el: HTMLElement, cont: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    const top = rect.top + cont.scrollTop;
+    const targetY = top + rect.height / 2 - cont.clientHeight / 2;
+    return Math.max(0, targetY);
+  };
+
+  const smoothScrollTo = (cont: HTMLElement, targetY: number) => {
+    const startY = cont.scrollTop;
+    const delta = targetY - startY;
+    const start = performance.now();
+    isAnimatingRef.current = true;
+
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / DURATION_MS);
+      cont.scrollTop = startY + delta * easeOutCubic(t);
+      if (t < 1) requestAnimationFrame(step);
+      else isAnimatingRef.current = false;
+    };
+    requestAnimationFrame(step);
+  };
+
+  const currentSectionIndex = (cont: HTMLElement, list: HTMLElement[]) => {
+    const mid = cont.scrollTop + cont.clientHeight / 2;
+    let bestIdx = 0;
+    let bestDist = Number.POSITIVE_INFINITY;
+    list.forEach((s, i) => {
+      const r = s.getBoundingClientRect();
+      const top = r.top + cont.scrollTop;
+      const center = top + r.height / 2;
+      const d = Math.abs(center - mid);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    });
+    return bestIdx;
+  };
+
+  const onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const cont = containerRef.current;
+    if (!cont) return;
+    if (isAnimatingRef.current) {
+      e.preventDefault();
+      return;
+    }
+    const list = getSections();
+    if (list.length === 0) return;
+
+    const dir = e.deltaY > 0 ? 1 : -1;
+    const idx = currentSectionIndex(cont, list);
+    const nextIdx = Math.max(0, Math.min(list.length - 1, idx + dir));
+    if (nextIdx === idx) return;
+
+    e.preventDefault();
+    const targetY = centerTargetFor(list[nextIdx], cont);
+    smoothScrollTo(cont, targetY);
+  };
+
+  const jumpTo = (id: string) => {
+    const target = document.getElementById(id) as HTMLElement | null;
+    const cont = containerRef.current;
+    if (!target || !cont) return;
+    const targetY = centerTargetFor(target, cont);
+    smoothScrollTo(cont, targetY);
+  };
+
   // === TEAM scroll reveal ===
   const teamRef = useRef(null);
   const isInView = useInView(teamRef, { once: false, amount: 0.3 });
@@ -68,7 +145,13 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   }, []);
 
   return (
-    <div className="relative overflow-y-auto scroll-smooth text-white font-jersey">
+    <div
+      ref={containerRef}
+      onWheel={onWheel}
+      className="relative overflow-y-auto text-white font-jersey overscroll-contain
+                 h-[calc(var(--vh,1vh)*100)] md:h-screen"
+      tabIndex={0}
+    >
       {/* FIXED background */}
       <div
         className="
@@ -89,7 +172,8 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       <section
         id="about-intro"
         data-animate
-        className={`min-h-screen flex flex-col items-center justify-center transition-all duration-1000 ${visibleSections.has('about-intro') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        className={`min-h-screen flex flex-col items-center justify-center transition-all duration-1000
+                    ${visibleSections.has('about-intro') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
           }`}
       >
         {/* Nadpis + text */}
@@ -125,7 +209,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           </p>
         </div>
 
-        {/* Panáček */}
+        {/* Panáček (GIF šipka) */}
         <div className="mt-6 md:mt-10 translate-y-[10vh] md:translate-y-[10vh]">
           <img
             src="/Bits_arrow.gif"
@@ -137,7 +221,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             }}
             onClick={() => {
               playSound();
-              document.getElementById('about-skills')?.scrollIntoView({ behavior: 'smooth' });
+              jumpTo('about-skills');
             }}
           />
         </div>
@@ -148,27 +232,139 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       <section
         id="about-skills"
         data-animate
-        className={`min-h-screen flex items-center justify-center px-6 transition-all duration-1000 delay-100 ${visibleSections.has('about-skills')
-          ? 'opacity-100 translate-y-0'
-          : 'opacity-0 translate-y-10'
+        className={`min-h-screen flex items-center justify-center px-6 transition-all duration-1000 delay-100
+                    ${visibleSections.has('about-skills') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
           }`}
       >
-        <div className="grid grid-cols-2 gap-[1rem] max-w-7xl w-full items-stretch">
-          {/* === LEVÁ STRANA: Textový box === */}
-          <div className="bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/10 flex flex-col justify-center gap-4 h-full">
-            <h2 className="text-5xl md:text-6xl font-bold text-yellow-300 leading-tight">
+        {/* === MOBILE (<md) layout — přesný fit do viewportu === */}
+        <div
+          className="
+    md:hidden w-full max-w-7xl
+    grid gap-2
+    h-[90svh]            /* = 100% reálné výšky viewportu i na iOS */
+    grid-rows-[53%_15%_6%_20%]  /* text / duo / nudle / 3D */
+  "
+        >
+          {/* 1) TEXT FULL */}
+          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-5 overflow-auto h-full">
+            <h2 className="text-[clamp(2.1rem,8vw,2.8rem)] font-bold text-yellow-300 leading-tight">
               {t('about.skills.title')}
             </h2>
-            <p
-              className="text-3xl whitespace-pre-line leading-relaxed text-white">
+            <p className="mt-2 text-[clamp(1rem,4.5vw,1.3rem)] whitespace-pre-line leading-relaxed text-white">
               {t('about.skills.content')}
             </p>
           </div>
 
-          {/* === PRAVÁ STRANA: Bento boxy 2×2 === */}
-          <div className="grid grid-cols-2 grid-rows-2 gap-[1rem]">
+          {/* 2) ŘÁDEK: LEVO PC.gif, PRAVO VIDEO */}
+          <div className="grid grid-cols-2 gap-3 h-full">
+            {/* PC.gif (left) */}
+            <div className="rounded-3xl overflow-hidden border border-white/10 bg-black h-full">
+              <img src="/PC.gif" alt="Computer Animation" className="w-full h-full object-contain" />
+            </div>
+            {/* VIDEO (right) */}
+            <div className="rounded-3xl overflow-hidden border border-white/10 bg-black h-full">
+              <video
+                src="/videos/catalog.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+
+          {/* 3) DLOUHÁ NUDLE – PROGRESS */}
+          <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-black h-full">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full h-full">
+                <IdeaToRealityBar />
+              </div>
+            </div>
+          </div>
+
+          {/* 4) 3D MODEL FULL WIDTH */}
+          <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-black flex items-center justify-center h-full">
+            <model-viewer
+              src="/anvil.glb"
+              alt="Anvil 3D Model"
+              auto-rotate
+              camera-controls
+              disable-zoom
+              interaction-prompt="none"
+              style={{ width: 'clamp(120px,50vw,220px)', height: 'clamp(120px,50vw,220px)' }}
+              onPointerDown={() => {
+                setAnvilHintVisible(false);
+                setTimeout(() => setAnvilHintVisible(true), 5000);
+              }}
+            />
+            <p
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[#FFED29] font-bold
+                 text-[clamp(0.9rem,3.5vw,1.1rem)] select-none"
+              style={{ writingMode: 'vertical-lr' }}
+            >
+              {t('about.skills.anvil')}
+            </p>
+            {anvilHintVisible && (
+              <div className="absolute z-20 pointer-events-none left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <img src="/mouse.png" alt="Drag Hint" className="w-[clamp(28px,9vw,44px)] h-[clamp(28px,9vw,44px)]" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* === DESKTOP/TABLET (md+): původní layout === */}
+        <div
+          className="
+      hidden md:grid
+      grid-cols-2 gap-[1rem] max-w-7xl w-full items-stretch
+      md:gap-[clamp(0.75rem,1.2vw,1rem)]
+    "
+        >
+          {/* LEVÝ TEXT BOX */}
+          <div
+            className="
+        bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/10
+        flex flex-col justify-center gap-4 h-full
+        md:px-[clamp(1.25rem,4vw,3.5rem)]
+        md:py-[clamp(0.75rem,2vw,1.25rem)]
+        md:gap-[clamp(0.5rem,1.2vw,1rem)]
+      "
+          >
+            <h2
+              className="
+          text-5xl md:text-6xl font-bold text-yellow-300 leading-tight
+          md:text-[clamp(2.25rem,4vw,3.75rem)]
+        "
+            >
+              {t('about.skills.title')}
+            </h2>
+            <p
+              className="
+          text-3xl whitespace-pre-line leading-relaxed text-white
+          md:text-[clamp(1.125rem,2.2vw,1.875rem)]
+        "
+            >
+              {t('about.skills.content')}
+            </p>
+          </div>
+
+          {/* PRAVÁ STRANA: Bento 2×2 */}
+          <div
+            className="
+        grid grid-cols-2 grid-rows-2 gap-[1rem]
+        md:gap-[clamp(0.5rem,1vw,1rem)]
+      "
+          >
             {/* Box A – levý sloupec, přes 2 řádky */}
-            <div className="row-span-2 bg-white/10 backdrop-blur-lg rounded-3xl p-0 border border-white/10 h-[480px] w-full overflow-hidden">
+            <div
+              className="
+          row-span-2 bg-white/10 backdrop-blur-lg rounded-3xl p-0 border border-white/10
+          h-[480px] w-full overflow-hidden
+          md:h-[clamp(360px,50vw,480px)]
+          lg:h-[480px]
+        "
+            >
               <video
                 src="/videos/catalog.mp4"
                 autoPlay
@@ -180,7 +376,13 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             </div>
 
             {/* Box B – horní řádek s kovadlinou */}
-            <div className="relative bg-black backdrop-blur-lg rounded-3xl border border-white/10 h-full flex items-center justify-center p-4 overflow-hidden">
+            <div
+              className="
+          relative bg-black backdrop-blur-lg rounded-3xl border border-white/10
+          h-full flex items-center justify-center p-4 overflow-hidden
+          md:p-[clamp(0.5rem,1.2vw,1rem)]
+        "
+            >
               <model-viewer
                 src="/anvil.glb"
                 alt="Anvil 3D Model"
@@ -188,18 +390,18 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
                 camera-controls
                 disable-zoom
                 interaction-prompt="none"
-                style={{ width: '120px', height: '120px' }}
+                style={{ width: 'clamp(90px,9vw,120px)', height: 'clamp(90px,9vw,120px)' }}
                 onPointerDown={() => {
                   setAnvilHintVisible(false);
-
-                  setTimeout(() => {
-                    setAnvilHintVisible(true);
-                  }, 5000);
+                  setTimeout(() => setAnvilHintVisible(true), 5000);
                 }}
               />
               <div className="absolute top-1/2 right-2 -translate-y-1/2">
                 <p
-                  className="text-[#FFED29] text-4xl font-bold select-none"
+                  className="
+              text-[#FFED29] text-4xl font-bold select-none
+              md:text-[clamp(1.25rem,2.8vw,2.5rem)]
+            "
                   style={{ writingMode: 'vertical-lr' }}
                 >
                   {t('about.skills.anvil')}
@@ -207,7 +409,11 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
               </div>
               {anvilHintVisible && (
                 <div className="absolute z-20 pointer-events-none animate-wiggle left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                  <img src="/mouse.png" alt="Drag Hint" className="w-12 h-12" />
+                  <img
+                    src="/mouse.png"
+                    alt="Drag Hint"
+                    className="w-12 h-12 md:w-[clamp(32px,4vw,48px)] md:h-[clamp(32px,4vw,48px)]"
+                  />
                 </div>
               )}
             </div>
@@ -229,13 +435,13 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
         </div>
       </section>
 
-
-
       {/* === MISSION + VISION === */}
       <section
         id="about-mission"
         data-animate
-        className={`py-32 transition-all duration-1000 delay-200 ${visibleSections.has('about-mission') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+        className={`min-h-screen flex items-center justify-center
+                    py-32 transition-all duration-1000 delay-200
+                    ${visibleSections.has('about-mission') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
       >
         <div className="container mx-auto px-6 max-w-6xl">
           <div
@@ -364,7 +570,6 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             </div>
           </div>
         </motion.div>
-
 
         {/* Tlačítka pod žlutým pruhem */}
         <div className="h-[640px]" aria-hidden="true" />
