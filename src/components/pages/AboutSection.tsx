@@ -18,6 +18,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, useAnimation, useInView } from 'framer-motion';
 import { IdeaToRealityBar } from '../IdeaToRealityBar';
 import { useNavigate } from 'react-router-dom';
+import MobileMissionVision from '../MobileMissionVision';
 
 interface AboutSectionProps {
   t: (key: string) => string;
@@ -476,48 +477,55 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       <section
         id="about-mission"
         data-animate
-        className={`min-h-screen flex items-center justify-center
-                    py-32 transition-all duration-1000 delay-200
-                    ${visibleSections.has('about-mission') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+        className={`min-h-screen
+              block lg:flex lg:items-center lg:justify-center
+              py-16 lg:py-32 transition-all duration-1000 delay-200
+              ${visibleSections.has('about-mission') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
       >
         <div className="container mx-auto px-6 max-w-6xl">
-          <div
-            className="grid lg:grid-cols-2 items-start"
-            style={{ gap: '215px' }}
-          >
 
-            {/* Obrázek mezi boxy */}
-            <img
-              src="/Bytes_hold.png"
-              alt="Bytes Holding"
-              className="hidden lg:block absolute top-1/2 left-1/2 z-10 w-64 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            />
+          {/* === DESKTOP layout (jen ≥1024px) === */}
+          <div className="hidden lg:block relative">
+            <div className="grid lg:grid-cols-2 items-start" style={{ gap: '215px' }}>
+              {/* Obrázek mezi boxy (jen desktop) */}
+              <img
+                src="/Bytes_hold.png"
+                alt="Bytes Holding"
+                className="hidden lg:block absolute top-1/2 left-1/2 z-10 w-64 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              />
 
-            {['mission', 'vision'].map((key) => (
-              <div
-                key={key}
-                className="relative group flex flex-col h-full transition-all duration-500 hover:-translate-y-2"
-              >
-                <h3
-                  className="text-5xl md:text-7xl font-bold text-[#FFED29] mb-4 text-center"
-                  style={{
-                    textShadow: `
-            -15px -15px 0 #000,
-            -30px -30px 0 rgba(0, 0, 0, 0.4)
-          `,
-                  }}
+              {['mission', 'vision'].map((key) => (
+                <div
+                  key={key}
+                  className="relative group flex flex-col h-full transition-all duration-500 hover:-translate-y-2"
                 >
-                  {t(`about.${key}.title`)}
-                </h3>
-                <div className="absolute inset-0 rounded-3xl blur-3xl transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-[#FFED29]/20 group-hover:to-pink-400/20" />
-                <div className="relative bg-white/5 backdrop-blur-lg rounded-3xl p-6 border border-white/10 flex-grow">
-                  <p className="text-2xl leading-relaxed whitespace-pre-line">
-                    {t(`about.${key}.content`)}
-                  </p>
+                  <h3
+                    className="text-5xl md:text-7xl font-bold text-[#FFED29] mb-4 text-center"
+                    style={{
+                      textShadow: `
+                  -15px -15px 0 #000,
+                  -30px -30px 0 rgba(0, 0, 0, 0.4)
+                `,
+                    }}
+                  >
+                    {t(`about.${key}.title`)}
+                  </h3>
+                  <div className="absolute inset-0 rounded-3xl blur-3xl transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-[#FFED29]/20 group-hover:to-pink-400/20" />
+                  <div className="relative bg-white/5 backdrop-blur-lg rounded-3xl p-6 border border-white/10 flex-grow">
+                    <p className="text-2xl leading-relaxed whitespace-pre-line">
+                      {t(`about.${key}.content`)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          {/* === MOBILE layout (3D orbit animace) – <1024px === */}
+          <div className="lg:hidden">
+            <MobileMissionVision t={t} />
+          </div>
+
         </div>
       </section>
 
@@ -620,7 +628,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             {t('about.button.back')}
           </button>
 
-        {/* CONTACT → ContactSection */}
+          {/* CONTACT → ContactSection */}
           <button
             onClick={() => navigate('/contact')}
             className="bg-[#E6D021] hover:bg-blue-700 text-lg text-black font-bold py-3 px-8 rounded-full shadow-lg shadow-black transition-all duration-300"
