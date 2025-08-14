@@ -1,10 +1,10 @@
 // src/components/about/MobileMissionVision.tsx
-import React, { useLayoutEffect, useRef, useState, useEffect } from 'react';
+import React, { useLayoutEffect, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 
 type Props = { t: (key: string) => string; className?: string };
 
-// najdi nejbližší scroll-parent (overflow-y: auto/scroll)
+// Najdi nejbližší scroll-parent (overflow-y: auto/scroll)
 function getScrollParent(el: HTMLElement | null): HTMLElement | null {
   let node: HTMLElement | null = el;
   while (node) {
@@ -15,12 +15,12 @@ function getScrollParent(el: HTMLElement | null): HTMLElement | null {
     }
     node = node.parentElement;
   }
-  return document.scrollingElement as HTMLElement | null;
+  return (document.scrollingElement as HTMLElement) ?? document.body;
 }
 
 const getSVH = () => (typeof window !== 'undefined' ? window.innerHeight : 1);
 
-// --- Dojezd (buffery) ---
+// Dojezd (buffery)
 const TOP_BUF = 0.05; // 5 % nahoře
 const BOT_BUF = 0.05; // 5 % dole
 const EPS = 0.02;     // zarovnání 2 %
@@ -29,28 +29,22 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const scrollParentRef = useRef<HTMLElement | null>(null);
 
-  // raw progress 0..1 v rámci celé výšky sekce
+  // 0..1 v rámci celé výšky sekce (raw) a remapovaný progress mimo buffery
   const raw = useMotionValue(0);
-
-  // remapovaný progress 0..1 jen pro střední část (mimo buffery)
   const progress = useMotionValue(0);
 
-  // jsme uprostřed (0<raw<1) mimo buffery → blokujeme rodiče
-  const midActiveRef = useRef(false);
-  const [midActive, setMidActive] = useState(false); // pro styly overlaye
-
-  const [range, setRange] = useState({ start: 0, end: 1 });
+  // Udržuj rozsah skrolování (v px) v ref – bez zbytečných re-renderů
+  const rangeRef = useRef({ start: 0, end: 1 });
 
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    scrollParentRef.current = getScrollParent(el);
 
-    const recalc = () => {
-      const sp = scrollParentRef.current;
-      if (!sp) return;
+    const sp = (scrollParentRef.current = getScrollParent(el));
 
-      // pozice elementu v rámci scroll-parentu
+    const computeRange = () => {
+      if (!sp || !el) return;
+
       const elRect = el.getBoundingClientRect();
       const spRect = sp.getBoundingClientRect();
       const elTopInSP = elRect.top - spRect.top + sp.scrollTop;
@@ -59,45 +53,19 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
       const svh = getSVH();
 
       const start = elTopInSP;
-      const end = elTopInSP + height - svh;
-      const safeEnd = Math.max(start + 1, end);
+      const end = Math.max(start + 1, elTopInSP + height - svh); // bezpečný end
+      rangeRef.current = { start, end };
 
-      setRange({ start, end: safeEnd });
-
-      const update = () => {
-        let r = (sp.scrollTop - start) / (safeEnd - start);
-        r = Math.max(0, Math.min(1, r));
-        if (r < EPS) r = 0;
-        else if (r > 1 - EPS) r = 1;
-
-        raw.set(r);
-
-        if (r <= TOP_BUF) {
-          progress.set(0);
-          midActiveRef.current = false;
-          setMidActive(false);
-        } else if (r >= 1 - BOT_BUF) {
-          progress.set(1);
-          midActiveRef.current = false;
-          setMidActive(false);
-        } else {
-          const p = (r - TOP_BUF) / (1 - TOP_BUF - BOT_BUF);
-          progress.set(p);
-          midActiveRef.current = true;
-          setMidActive(true);
-        }
-      };
-
-      update();
+      updateFromScroll(); // inicializace raw/progress
     };
 
-    const onScroll = () => {
-      const sp = scrollParentRef.current;
-      if (!sp) return;
-      const { start, end } = range;
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
+    const updateFromScroll = () => {
+      if (!sp) return;
+      const { start, end } = rangeRef.current;
       let r = (sp.scrollTop - start) / (end - start);
-      r = Math.max(0, Math.min(1, r));
+      r = clamp01(r);
       if (r < EPS) r = 0;
       else if (r > 1 - EPS) r = 1;
 
@@ -105,72 +73,67 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
 
       if (r <= TOP_BUF) {
         progress.set(0);
-        midActiveRef.current = false;
-        setMidActive(false);
       } else if (r >= 1 - BOT_BUF) {
         progress.set(1);
-        midActiveRef.current = false;
-        setMidActive(false);
       } else {
         const p = (r - TOP_BUF) / (1 - TOP_BUF - BOT_BUF);
         progress.set(p);
-        midActiveRef.current = true;
-        setMidActive(true);
       }
     };
 
-    recalc();
-    const sp = scrollParentRef.current;
-    sp?.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', recalc);
-    window.addEventListener('orientationchange', recalc);
+    computeRange();
+    sp?.addEventListener('scroll', updateFromScroll, { passive: true });
+    window.addEventListener('resize', computeRange);
+    window.addEventListener('orientationchange', computeRange);
 
-    const tId = window.setTimeout(recalc, 60);
+    // drobný delay po mountu kvůli layoutu
+    const tId = window.setTimeout(computeRange, 60);
+
     return () => {
       window.clearTimeout(tId);
-      sp?.removeEventListener('scroll', onScroll as any);
-      window.removeEventListener('resize', recalc);
-      window.removeEventListener('orientationchange', recalc);
+      sp?.removeEventListener('scroll', updateFromScroll as any);
+      window.removeEventListener('resize', computeRange);
+      window.removeEventListener('orientationchange', computeRange);
     };
-  }, [range.start, range.end]);
+  }, []);
 
-  // --- Plynulejší odezva: easing + spring ---
+  // Easing + spring pro plynulejší odezvu
   const eased = useTransform(progress, (v) =>
     v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2
   );
   const smooth = useSpring(eased, { stiffness: 300, damping: 26, mass: 0.6 });
 
-  // ===================== 3D ORBIT (kružnice v perspektivě) =====================
-  // úhel (0..π) → půl-orbita: Mission vepředu (0 rad) → Vision vepředu (π rad)
+  // =============== 3D ORBIT (kružnice v perspektivě) ===============
+  // úhel (0..π): Mission vepředu (0 rad) → Vision vepředu (π rad)
   const theta = useTransform(smooth, (v) => v * Math.PI);
 
-  // SIN/COS pro Mission
+  // Mission
   const mSin = useTransform(theta, (t) => Math.sin(t));
   const mCos = useTransform(theta, (t) => Math.cos(t));
 
-  // Pro Vision je to posun o π (opačný bod kružnice)
+  // Vision = posun o π
   const vSin = useTransform(theta, (t) => Math.sin(t + Math.PI));
   const vCos = useTransform(theta, (t) => Math.cos(t + Math.PI));
 
-  // Parametry „kružnice“
-  const R_PX = 120;      // horizontální poloměr (boční posun)
-  const MAX_TILT = 28;   // max Y-rotace v ° (naklopení do strany)
+  // Parametry dráhy
+  const R_PX = 120;       // horizontální poloměr
+  const MAX_TILT = 28;    // max Y-rotace v °
   const BASE_SCALE = 0.9;
-  const DEPTH_SCALE = 0.12;  // kolik scale přidá hloubka (cos)
-  const BACK_BLUR = 6;       // blur vzadu
-  const FRONT_BLUR = 0;      // blur vpředu
+  const DEPTH_SCALE = 0.12;
+  const BACK_BLUR = 6;
+  const FRONT_BLUR = 0;
 
-  // Mission (přední na začátku)
+  // Mission transforms
   const missionX       = useTransform(mSin, (s) => `${s * R_PX}px`);
   const missionScale   = useTransform(mCos, (c) => BASE_SCALE + DEPTH_SCALE * (c * 0.999));
-  const missionOpacity = useTransform(mCos, (c) => 0.55 + 0.45 * ((c + 1) / 2)); // -1..1 → 0..1
+  const missionOpacity = useTransform(mCos, (c) => 0.55 + 0.45 * ((c + 1) / 2));
   const missionRotateY = useTransform(mSin, (s) => `${-s * MAX_TILT}deg`);
   const missionBlurPx  = useTransform(mCos, (c) => {
     const t = (c + 1) / 2; // -1..1 → 0..1 (vpředu 1)
     return FRONT_BLUR + (1 - t) * BACK_BLUR;
   });
 
-  // Vision (zadní na začátku, přední na konci)
+  // Vision transforms
   const visionX        = useTransform(vSin, (s) => `${s * R_PX}px`);
   const visionScale    = useTransform(vCos, (c) => BASE_SCALE + DEPTH_SCALE * (c * 0.999));
   const visionOpacity  = useTransform(vCos, (c) => 0.55 + 0.45 * ((c + 1) / 2));
@@ -183,35 +146,18 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
   const missionFilter  = useTransform(missionBlurPx, (b) => `blur(${b}px)`);
   const visionFilter   = useTransform(visionBlurPx, (b) => `blur(${b}px)`);
 
-  // ===== Zachytávání wheel/touch uprostřed (mimo buffery) =====
-  const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
-    if (midActiveRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
-  const onTouchStart: React.TouchEventHandler<HTMLDivElement> = () => {};
-  const onTouchMove: React.TouchEventHandler<HTMLDivElement> = (e) => {
-    if (midActiveRef.current) {
-      // funguje jen když je touch-action:none
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-  const onTouchEnd: React.TouchEventHandler<HTMLDivElement> = () => {};
-
+  // Nativní scroll necháváme být – žádné preventDefault
   useEffect(() => {
+    // udrž progress v rozsahu i při skocích (např. anchor)
     const unsub = raw.on('change', (r) => {
-      const active = r > TOP_BUF && r < (1 - BOT_BUF);
-      midActiveRef.current = active;
-      setMidActive(active);
+      if (r <= TOP_BUF) progress.set(0);
+      else if (r >= 1 - BOT_BUF) progress.set(1);
     });
     return () => unsub();
   }, []);
 
   return (
-    // lg:hidden = viditelné jen pro šířky < 1024 px
+    // Viditelné jen < 1024 px
     <div className={`lg:hidden relative h-[240svh] ${className}`} ref={containerRef}>
       <div
         className="sticky top-0 flex items-center justify-center"
@@ -219,25 +165,10 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
           height: '100svh',       // stabilní výška na mobilech
           perspective: 1000,      // KLÍČ: perspektiva na kontejneru
           WebkitPerspective: 1000,
+          // Důležité: nic tu neblokuje nativní scroll
         }}
       >
-        {/* overlay vrstva pro zachycení wheel/touch uprostřed */}
-        <div
-          className={`absolute inset-0 z-10 ${midActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
-          onWheel={handleWheel}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          style={{
-            // Klíč k preventDefault na mobilech
-            touchAction: midActive ? 'none' : 'auto',
-            // Zabraň „guma efektu“/propagaci do parentu
-            overscrollBehavior: 'contain',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        />
-
-        {/* Vision (kruhová dráha, opačný bod než Mission) */}
+        {/* Vision (zadní na začátku, přední na konci) */}
         <motion.div
           style={{
             x: visionX,
@@ -252,7 +183,7 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
           <Card title={t('about.vision.title')} text={t('about.vision.content')} />
         </motion.div>
 
-        {/* Mission */}
+        {/* Mission (přední na začátku) */}
         <motion.div
           style={{
             x: missionX,
