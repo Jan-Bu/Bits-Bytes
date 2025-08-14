@@ -28,10 +28,17 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   const [anvilHintVisible, setAnvilHintVisible] = useState(true);
   const navigate = useNavigate();
 
-  // === PLYNULÝ SCROLL (klik + wheel) pouze pro About ===
+  // === PLYNULÝ SCROLL (klik + wheel + touch) pouze pro About ===
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnimatingRef = useRef(false);
-  const DURATION_MS = 800; // << zpomal/urychli podle potřeby
+
+  const DURATION_MS = 800;        // rychlost animace
+  const SWIPE_PX = 50;            // minimální vzdálenost swipu (px)
+  const SWIPE_VEL = 0.3;          // minimální rychlost swipu (px/ms)
+
+  const touchStartY = useRef(0);
+  const touchLastY = useRef(0);
+  const touchStartTime = useRef(0);
 
   const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
@@ -77,15 +84,14 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     return bestIdx;
   };
 
+  // === Wheel (desktop) ===
   const onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     const cont = containerRef.current;
     if (!cont) return;
-    if (isAnimatingRef.current) {
-      e.preventDefault();
-      return;
-    }
+    if (isAnimatingRef.current) { e.preventDefault(); return; }
+
     const list = getSections();
-    if (list.length === 0) return;
+    if (!list.length) return;
 
     const dir = e.deltaY > 0 ? 1 : -1;
     const idx = currentSectionIndex(cont, list);
@@ -94,6 +100,42 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
 
     e.preventDefault();
     const targetY = centerTargetFor(list[nextIdx], cont);
+    smoothScrollTo(cont, targetY);
+  };
+
+  // === Touch (mobile/tablet) ===
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    touchStartY.current = e.touches[0].clientY;
+    touchLastY.current = touchStartY.current;
+    touchStartTime.current = performance.now();
+  };
+
+  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchLastY.current = e.touches[0].clientY;
+    // necháme nativní posun probíhat; po uvolnění "zacvakneme" plynule
+  };
+
+  const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    const cont = containerRef.current;
+    if (!cont || isAnimatingRef.current) return;
+
+    const list = getSections();
+    if (!list.length) return;
+
+    const dy = touchStartY.current - touchLastY.current; // >0 = swipe up (dolů po stránce)
+    const dt = Math.max(1, performance.now() - touchStartTime.current);
+    const vel = Math.abs(dy) / dt;
+
+    const idx = currentSectionIndex(cont, list);
+
+    let targetIdx = idx; // default: snap na nejbližší
+    if (Math.abs(dy) > SWIPE_PX || vel > SWIPE_VEL) {
+      const dir = dy > 0 ? 1 : -1;
+      targetIdx = Math.max(0, Math.min(list.length - 1, idx + dir));
+    }
+
+    const targetY = centerTargetFor(list[targetIdx], cont);
     smoothScrollTo(cont, targetY);
   };
 
@@ -148,9 +190,13 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     <div
       ref={containerRef}
       onWheel={onWheel}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       className="relative overflow-y-auto text-white font-jersey overscroll-contain
                  h-[calc(var(--vh,1vh)*100)] md:h-screen"
       tabIndex={0}
+      style={{ WebkitOverflowScrolling: 'touch' }}
     >
       {/* FIXED background */}
       <div
@@ -177,9 +223,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           }`}
       >
         {/* Nadpis + text */}
-        <div
-          className="container mx-auto px-6 text-center translate-y-[-4vh] md:translate-y-0"
-        >
+        <div className="container mx-auto px-6 text-center translate-y-[-4vh] md:translate-y-0">
           <h1
             className="font-bold text-[#FFED29]
         text-[clamp(2.5rem,8vw,10rem)]
@@ -200,10 +244,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
 
           <p
             className="mt-2 max-w-4xl mx-auto whitespace-pre-line"
-            style={{
-              fontSize: 'clamp(1rem, 3vmin, 2.25rem)',
-              lineHeight: '1.35',
-            }}
+            style={{ fontSize: 'clamp(1rem, 3vmin, 2.25rem)', lineHeight: '1.35' }}
           >
             {t('about.intro.content')}
           </p>
@@ -215,10 +256,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             src="/Bits_arrow.gif"
             alt="Arrow Down"
             className="object-contain cursor-pointer select-none"
-            style={{
-              width: 'clamp(140px, 20vmin, 320px)',
-              height: 'clamp(140px, 20vmin, 320px)',
-            }}
+            style={{ width: 'clamp(140px, 20vmin, 320px)', height: 'clamp(140px, 20vmin, 320px)' }}
             onClick={() => {
               playSound();
               jumpTo('about-skills');
@@ -226,7 +264,6 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           />
         </div>
       </section>
-
 
       {/* === SKILLS === */}
       <section
@@ -246,7 +283,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   "
         >
           {/* 1) TEXT FULL */}
-          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-2 overflow-auto h-full">
+          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-5 overflow-auto h-full">
             <h2 className="text-[clamp(2.1rem,8vw,2.8rem)] font-bold text-yellow-300 leading-tight">
               {t('about.skills.title')}
             </h2>
@@ -583,7 +620,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             {t('about.button.back')}
           </button>
 
-          {/* CONTACT → ContactSection */}
+        {/* CONTACT → ContactSection */}
           <button
             onClick={() => navigate('/contact')}
             className="bg-[#E6D021] hover:bg-blue-700 text-lg text-black font-bold py-3 px-8 rounded-full shadow-lg shadow-black transition-all duration-300"
