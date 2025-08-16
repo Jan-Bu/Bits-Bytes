@@ -1,3 +1,4 @@
+// src/components/about/AboutSection.tsx
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -15,10 +16,11 @@ declare global {
 }
 
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, useAnimation, useInView } from 'framer-motion';
-import { IdeaToRealityBar } from '../IdeaToRealityBar';
+import { motion, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import MobileMissionVision from '../MobileMissionVision';
+import SnapScrollContainer, { type SnapScrollHandle, useIsDesktop } from '../uti/SnapScrollContainer';
+import { IdeaToRealityBar } from '../uti/IdeaToRealityBar';
+import MobileMissionVision from '../uti/MobileMissionVision';
 
 interface AboutSectionProps {
   t: (key: string) => string;
@@ -29,124 +31,8 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   const [anvilHintVisible, setAnvilHintVisible] = useState(true);
   const navigate = useNavigate();
 
-  // === PLYNULÝ SCROLL (klik + wheel + touch) pouze pro About ===
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isAnimatingRef = useRef(false);
-
-  const DURATION_MS = 800;        // rychlost animace
-  const SWIPE_PX = 50;            // minimální vzdálenost swipu (px)
-  const SWIPE_VEL = 0.3;          // minimální rychlost swipu (px/ms)
-
-  const touchStartY = useRef(0);
-  const touchLastY = useRef(0);
-  const touchStartTime = useRef(0);
-
-  const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
-
-  const getSections = (): HTMLElement[] =>
-    Array.from(document.querySelectorAll('section[id]')) as HTMLElement[];
-
-  const centerTargetFor = (el: HTMLElement, cont: HTMLElement) => {
-    const rect = el.getBoundingClientRect();
-    const top = rect.top + cont.scrollTop;
-    const targetY = top + rect.height / 2 - cont.clientHeight / 2;
-    return Math.max(0, targetY);
-  };
-
-  const smoothScrollTo = (cont: HTMLElement, targetY: number) => {
-    const startY = cont.scrollTop;
-    const delta = targetY - startY;
-    const start = performance.now();
-    isAnimatingRef.current = true;
-
-    const step = (now: number) => {
-      const t = Math.min(1, (now - start) / DURATION_MS);
-      cont.scrollTop = startY + delta * easeOutCubic(t);
-      if (t < 1) requestAnimationFrame(step);
-      else isAnimatingRef.current = false;
-    };
-    requestAnimationFrame(step);
-  };
-
-  const currentSectionIndex = (cont: HTMLElement, list: HTMLElement[]) => {
-    const mid = cont.scrollTop + cont.clientHeight / 2;
-    let bestIdx = 0;
-    let bestDist = Number.POSITIVE_INFINITY;
-    list.forEach((s, i) => {
-      const r = s.getBoundingClientRect();
-      const top = r.top + cont.scrollTop;
-      const center = top + r.height / 2;
-      const d = Math.abs(center - mid);
-      if (d < bestDist) {
-        bestDist = d;
-        bestIdx = i;
-      }
-    });
-    return bestIdx;
-  };
-
-  // === Wheel (desktop) ===
-  const onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    const cont = containerRef.current;
-    if (!cont) return;
-    if (isAnimatingRef.current) { e.preventDefault(); return; }
-
-    const list = getSections();
-    if (!list.length) return;
-
-    const dir = e.deltaY > 0 ? 1 : -1;
-    const idx = currentSectionIndex(cont, list);
-    const nextIdx = Math.max(0, Math.min(list.length - 1, idx + dir));
-    if (nextIdx === idx) return;
-
-    e.preventDefault();
-    const targetY = centerTargetFor(list[nextIdx], cont);
-    smoothScrollTo(cont, targetY);
-  };
-
-  // === Touch (mobile/tablet) ===
-  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
-    touchStartY.current = e.touches[0].clientY;
-    touchLastY.current = touchStartY.current;
-    touchStartTime.current = performance.now();
-  };
-
-  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    touchLastY.current = e.touches[0].clientY;
-    // necháme nativní posun probíhat; po uvolnění "zacvakneme" plynule
-  };
-
-  const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    const cont = containerRef.current;
-    if (!cont || isAnimatingRef.current) return;
-
-    const list = getSections();
-    if (!list.length) return;
-
-    const dy = touchStartY.current - touchLastY.current; // >0 = swipe up (dolů po stránce)
-    const dt = Math.max(1, performance.now() - touchStartTime.current);
-    const vel = Math.abs(dy) / dt;
-
-    const idx = currentSectionIndex(cont, list);
-
-    let targetIdx = idx; // default: snap na nejbližší
-    if (Math.abs(dy) > SWIPE_PX || vel > SWIPE_VEL) {
-      const dir = dy > 0 ? 1 : -1;
-      targetIdx = Math.max(0, Math.min(list.length - 1, idx + dir));
-    }
-
-    const targetY = centerTargetFor(list[targetIdx], cont);
-    smoothScrollTo(cont, targetY);
-  };
-
-  const jumpTo = (id: string) => {
-    const target = document.getElementById(id) as HTMLElement | null;
-    const cont = containerRef.current;
-    if (!target || !cont) return;
-    const targetY = centerTargetFor(target, cont);
-    smoothScrollTo(cont, targetY);
-  };
+  // Ref na SnapScrollContainer pro jumpTo
+  const snapRef = useRef<SnapScrollHandle>(null);
 
   // === TEAM scroll reveal ===
   const teamRef = useRef(null);
@@ -154,9 +40,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
   const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
-    if (isInView && !hasAnimated) {
-      setHasAnimated(true);
-    }
+    if (isInView && !hasAnimated) setHasAnimated(true);
   }, [isInView, hasAnimated]);
 
   const playSound = () => {
@@ -164,48 +48,36 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     audio.play();
   };
 
+  // IntersectionObserver pro fade-in sekcí
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setVisibleSections((prev) => new Set([...prev, entry.target.id]));
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('[data-animate]').forEach((el) =>
-      observer.observe(el)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections((prev) => new Set([...prev, (entry.target as HTMLElement).id]));
+          }
+        });
+      },
+      { threshold: 0.1 }
     );
+
+    document.querySelectorAll('[data-animate]').forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const setVh = () =>
-      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-    setVh();
-    window.addEventListener('resize', setVh);
-    return () => window.removeEventListener('resize', setVh);
-  }, []);
-
   return (
-    <div
-      ref={containerRef}
-      onWheel={onWheel}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      className="relative overflow-y-auto text-white font-jersey overscroll-contain
-                 h-[calc(var(--vh,1vh)*100)] md:h-screen"
-      tabIndex={0}
+    <SnapScrollContainer
+      ref={snapRef}
+      className="relative overflow-y-auto text-white font-jersey overscroll-contain h-[calc(var(--vh,1vh)*100)] md:h-screen"
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
       {/* FIXED background */}
       <div
         className="
-        fixed inset-0 -z-10
-        w-screen h-[calc(var(--vh,1vh)*100)] md:h-screen
-        pointer-events-none
-      "
+          fixed inset-0 -z-10
+          w-screen h-[calc(var(--vh,1vh)*100)] md:h-screen
+          pointer-events-none
+        "
         style={{
           background:
             'radial-gradient(circle at center, #231466ff 0%, #130b2eff 40%, #090510ff 80%, #000000 100%)',
@@ -220,24 +92,24 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
         id="about-intro"
         data-animate
         className={`min-h-screen flex flex-col items-center justify-center transition-all duration-1000
-                    ${visibleSections.has('about-intro') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}
+          ${visibleSections.has('about-intro') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+        `}
       >
         {/* Nadpis + text */}
         <div className="container mx-auto px-6 text-center translate-y-[3vh] md:translate-y-[2vh] lg:translate-y-0">
           <h1
             className="font-bold text-[#FFED29]
-        text-[clamp(2.5rem,8vw,10rem)]
-        leading-[0.95]"
+                       text-[clamp(2.5rem,8vw,10rem)]
+                       leading-[0.95]"
             style={{
               textShadow: `
-          calc(clamp(2px, 0.8vw, 25px) * -1)
-          calc(clamp(2px, 0.8vw, 25px) * -1)
-          0 #000,
-          calc(clamp(4px, 1.6vw, 50px) * -1)
-          calc(clamp(4px, 1.6vw, 50px) * -1)
-          0 rgba(0, 0, 0, 0.4)
-        `,
+                calc(clamp(2px, 0.8vw, 25px) * -1)
+                calc(clamp(2px, 0.8vw, 25px) * -1)
+                0 #000,
+                calc(clamp(4px, 1.6vw, 50px) * -1)
+                calc(clamp(4px, 1.6vw, 50px) * -1)
+                0 rgba(0, 0, 0, 0.4)
+              `,
             }}
           >
             {t('about.intro.title')}
@@ -260,7 +132,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             style={{ width: 'clamp(140px, 20vmin, 320px)', height: 'clamp(140px, 20vmin, 320px)' }}
             onClick={() => {
               playSound();
-              jumpTo('about-skills');
+              snapRef.current?.jumpTo('about-skills');
             }}
           />
         </div>
@@ -271,17 +143,17 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
         id="about-skills"
         data-animate
         className={`min-h-screen flex items-center justify-center px-6 transition-all duration-1000 delay-100
-                    ${visibleSections.has('about-skills') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}
+          ${visibleSections.has('about-skills') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+        `}
       >
         {/* === MOBILE (<md) layout — přesný fit do viewportu === */}
         <div
           className="
-    md:hidden w-full max-w-7xl
-    grid gap-2
-    h-[90svh]            /* = 100% reálné výšky viewportu i na iOS */
-    grid-rows-[53%_15%_6%_20%]  /* text / duo / nudle / 3D */
-  "
+            md:hidden w-full max-w-7xl
+            grid gap-2
+            h-[90svh]            /* = 100% reálné výšky viewportu i na iOS */
+            grid-rows-[53%_15%_6%_20%]  /* text / duo / nudle / 3D */
+          "
         >
           {/* 1) TEXT FULL */}
           <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-3 h-full">
@@ -312,7 +184,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             </div>
           </div>
 
-          {/* 3) DLOUHÁ NUDLE – PROGRESS */}
+          {/* 3) DLOUHÁ NUDLE — PROGRESS */}
           <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-black h-full">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full h-full">
@@ -338,7 +210,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             />
             <p
               className="absolute right-2 top-1/2 -translate-y-1/2 text-[#FFED29] font-bold
-                 text-[clamp(0.9rem,3.5vw,1.1rem)] select-none"
+                         text-[clamp(0.9rem,3.5vw,1.1rem)] select-none"
               style={{ writingMode: 'vertical-lr' }}
             >
               {t('about.skills.anvil')}
@@ -354,34 +226,34 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
         {/* === DESKTOP/TABLET (md+): původní layout === */}
         <div
           className="
-      hidden md:grid
-      grid-cols-2 gap-[1rem] max-w-7xl w-full items-stretch
-      md:gap-[clamp(0.75rem,1.2vw,1rem)]
-    "
+            hidden md:grid
+            grid-cols-2 gap-[1rem] max-w-7xl w-full items-stretch
+            md:gap-[clamp(0.75rem,1.2vw,1rem)]
+          "
         >
           {/* LEVÝ TEXT BOX */}
           <div
             className="
-        bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/10
-        flex flex-col justify-center gap-4 h-full
-        md:px-[clamp(1.25rem,4vw,3.5rem)]
-        md:py-[clamp(0.75rem,2vw,1.25rem)]
-        md:gap-[clamp(0.5rem,1.2vw,1rem)]
-      "
+              bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/10
+              flex flex-col justify-center gap-4 h-full
+              md:px-[clamp(1.25rem,4vw,3.5rem)]
+              md:py-[clamp(0.75rem,2vw,1.25rem)]
+              md:gap-[clamp(0.5rem,1.2vw,1rem)]
+            "
           >
             <h2
               className="
-          text-5xl md:text-6xl font-bold text-yellow-300 leading-tight
-          md:text-[clamp(2.25rem,4vw,3.75rem)]
-        "
+                text-5xl md:text-6xl font-bold text-yellow-300 leading-tight
+                md:text-[clamp(2.25rem,4vw,3.75rem)]
+              "
             >
               {t('about.skills.title')}
             </h2>
             <p
               className="
-          text-3xl whitespace-pre-line leading-relaxed text-white
-          md:text-[clamp(1.125rem,2.2vw,1.875rem)]
-        "
+                text-3xl whitespace-pre-line leading-relaxed text-white
+                md:text-[clamp(1.125rem,2.2vw,1.875rem)]
+              "
             >
               {t('about.skills.content')}
             </p>
@@ -390,18 +262,18 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           {/* PRAVÁ STRANA: Bento 2×2 */}
           <div
             className="
-        grid grid-cols-2 grid-rows-2 gap-[1rem]
-        md:gap-[clamp(0.5rem,1vw,1rem)]
-      "
+              grid grid-cols-2 grid-rows-2 gap-[1rem]
+              md:gap-[clamp(0.5rem,1vw,1rem)]
+            "
           >
-            {/* Box A – levý sloupec, přes 2 řádky */}
+            {/* Box A — levý sloupec, přes 2 řádky */}
             <div
               className="
-          row-span-2 bg-white/10 backdrop-blur-lg rounded-3xl p-0 border border-white/10
-          h-[480px] w-full overflow-hidden
-          md:h-[clamp(360px,50vw,480px)]
-          lg:h-[480px]
-        "
+                row-span-2 bg-white/10 backdrop-blur-lg rounded-3xl p-0 border border-white/10
+                h-[480px] w-full overflow-hidden
+                md:h-[clamp(360px,50vw,480px)]
+                lg:h-[480px]
+              "
             >
               <video
                 src="/videos/catalog.mp4"
@@ -413,13 +285,13 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
               />
             </div>
 
-            {/* Box B – horní řádek s kovadlinou */}
+            {/* Box B — horní řádek s kovadlinou */}
             <div
               className="
-          relative bg-black backdrop-blur-lg rounded-3xl border border-white/10
-          h-full flex items-center justify-center p-4 overflow-hidden
-          md:p-[clamp(0.5rem,1.2vw,1rem)]
-        "
+                relative bg-black backdrop-blur-lg rounded-3xl border border-white/10
+                h-full flex items-center justify-center p-4 overflow-hidden
+                md:p-[clamp(0.5rem,1.2vw,1rem)]
+              "
             >
               <model-viewer
                 src="/anvil.glb"
@@ -437,9 +309,9 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
               <div className="absolute top-1/2 right-2 -translate-y-1/2">
                 <p
                   className="
-              text-[#FFED29] text-4xl font-bold select-none
-              md:text-[clamp(1.25rem,2.8vw,2.5rem)]
-            "
+                    text-[#FFED29] text-4xl font-bold select-none
+                    md:text-[clamp(1.25rem,2.8vw,2.5rem)]
+                  "
                   style={{ writingMode: 'vertical-lr' }}
                 >
                   {t('about.skills.anvil')}
@@ -456,7 +328,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
               )}
             </div>
 
-            {/* Box B – dolní řádek */}
+            {/* Box B — dolní řádek */}
             <div className="row-span-2 h-full w-full overflow-hidden rounded-3xl bg-black">
               <img
                 src="/PC.gif"
@@ -465,7 +337,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
               />
             </div>
 
-            {/* Box A – pravý sloupec, přes 2 řádky */}
+            {/* Box A — pravý sloupec, přes 2 řádky */}
             <div className="h-full w-full overflow-hidden rounded-3xl bg-black">
               <IdeaToRealityBar />
             </div>
@@ -474,60 +346,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       </section>
 
       {/* === MISSION + VISION === */}
-      <section
-        id="about-mission"
-        data-animate
-        className={`min-h-screen
-              block lg:flex lg:items-center lg:justify-center
-              py-16 lg:py-32 transition-all duration-1000 delay-200
-              ${visibleSections.has('about-mission') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-      >
-        <div className="container mx-auto px-6 max-w-6xl">
-
-          {/* === DESKTOP layout (jen ≥1024px) === */}
-          <div className="hidden lg:block relative">
-            <div className="grid lg:grid-cols-2 items-start" style={{ gap: '215px' }}>
-              {/* Obrázek mezi boxy (jen desktop) */}
-              <img
-                src="/Bytes_hold.png"
-                alt="Bytes Holding"
-                className="hidden lg:block absolute top-1/2 left-1/2 z-10 w-64 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-              />
-
-              {['mission', 'vision'].map((key) => (
-                <div
-                  key={key}
-                  className="relative group flex flex-col h-full transition-all duration-500 hover:-translate-y-2"
-                >
-                  <h3
-                    className="text-5xl md:text-7xl font-bold text-[#FFED29] mb-4 text-center"
-                    style={{
-                      textShadow: `
-                  -15px -15px 0 #000,
-                  -30px -30px 0 rgba(0, 0, 0, 0.4)
-                `,
-                    }}
-                  >
-                    {t(`about.${key}.title`)}
-                  </h3>
-                  <div className="absolute inset-0 rounded-3xl blur-3xl transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-[#FFED29]/20 group-hover:to-pink-400/20" />
-                  <div className="relative bg-white/5 backdrop-blur-lg rounded-3xl p-6 border border-white/10 flex-grow">
-                    <p className="text-2xl leading-relaxed whitespace-pre-line">
-                      {t(`about.${key}.content`)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* === MOBILE layout (3D orbit animace) – <1024px === */}
-          <div className="lg:hidden">
-            <MobileMissionVision t={t} />
-          </div>
-
-        </div>
-      </section>
+      <MissionVisionWrapper t={t} visibleSections={visibleSections} />
 
       {/* TEAM */}
       <section
@@ -543,10 +362,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
               ? {
                 x: '0%',
                 y: '0%',
-                transition: {
-                  duration: 1,
-                  ease: [0.9, 0.05, 0.15, 0.95],
-                },
+                transition: { duration: 1, ease: [0.9, 0.05, 0.15, 0.95] },
               }
               : {}
           }
@@ -557,16 +373,16 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             {/* ŽLUTÝ PANEL s bílým rámečkem a černým outline */}
             <div
               className="relative left-[-25%] w-[150%] bg-[#E6D021] py-20 px-6 text-black 
-                   border-y-[16px] border-white"
+                         border-y-[16px] border-white"
             >
               {/* Nadpis */}
               <h2
                 className="text-6xl md:text-8xl font-bold mb-16 text-blue-700"
                 style={{
                   textShadow: `
-              -20px -20px 0 #000,
-              -40px -40px 0 rgba(0, 0, 0, 0.4)
-            `,
+                    -20px -20px 0 #000,
+                    -40px -40px 0 rgba(0, 0, 0, 0.4)
+                  `,
                 }}
               >
                 {t('about.team.title')}
@@ -637,8 +453,70 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           </button>
         </div>
       </section>
+    </SnapScrollContainer>
+  );
+};
 
-    </div>
+// Wrapper komponenta pro Mission/Vision sekci
+const MissionVisionWrapper: React.FC<{ 
+  t: (key: string) => string; 
+  visibleSections: Set<string>;
+}> = ({ t, visibleSections }) => {
+  const isDesktop = useIsDesktop();
+
+  return (
+    <section
+      id="about-mission"
+      data-animate
+      className={`min-h-screen transition-all duration-1000 delay-200
+        ${visibleSections.has('about-mission') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+        ${isDesktop ? 'block lg:flex lg:items-center lg:justify-center py-16 lg:py-32' : ''}
+      `}
+    >
+      <div className="container mx-auto px-6 max-w-6xl">
+        {isDesktop ? (
+          /* === DESKTOP layout (≥1024px) === */
+          <div className="relative">
+            <div className="grid lg:grid-cols-2 items-start" style={{ gap: '215px' }}>
+              {/* Obrázek mezi boxy (jen desktop) */}
+              <img
+                src="/Bytes_hold.png"
+                alt="Bytes Holding"
+                className="absolute top-1/2 left-1/2 z-10 w-64 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              />
+
+              {['mission', 'vision'].map((key) => (
+                <div
+                  key={key}
+                  className="relative group flex flex-col h-full transition-all duration-500 hover:-translate-y-2"
+                >
+                  <h3
+                    className="text-5xl md:text-7xl font-bold text-[#FFED29] mb-4 text-center"
+                    style={{
+                      textShadow: `
+                        -15px -15px 0 #000,
+                        -30px -30px 0 rgba(0, 0, 0, 0.4)
+                      `,
+                    }}
+                  >
+                    {t(`about.${key}.title`)}
+                  </h3>
+                  <div className="absolute inset-0 rounded-3xl blur-3xl transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-[#FFED29]/20 group-hover:to-pink-400/20" />
+                  <div className="relative bg-white/5 backdrop-blur-lg rounded-3xl p-6 border border-white/10 flex-grow">
+                    <p className="text-2xl leading-relaxed whitespace-pre-line">
+                      {t(`about.${key}.content`)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* === MOBILE layout s 3D orbit animací === */
+          <MobileMissionVision t={t} />
+        )}
+      </div>
+    </section>
   );
 };
 
