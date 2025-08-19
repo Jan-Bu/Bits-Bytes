@@ -1,7 +1,14 @@
 // src/components/uti/MobileMissionVision.tsx
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
-import { useSectionProgress, useIsDesktop } from './SnapScrollContainer';
+import React, { useRef, useState } from 'react';
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  type PanInfo,
+  type MotionValue,
+} from 'framer-motion';
+import { useIsDesktop } from './SnapScrollContainer';
 
 type Props = {
   t: (key: string) => string;
@@ -9,29 +16,22 @@ type Props = {
 };
 
 const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
-  // progress (0..1) dodává výhradně SnapScrollContainer (žádná scroll logika tady)
-  const progress = useSectionProgress('about-mission');
+  // 🚫 Bezpečnostní brzda: na desktopu neren­derovat (PC má snap scroll)
   const isDesktop = useIsDesktop();
+  if (isDesktop) return null;
 
-  // převedeme číslo na MotionValue kvůli plynulosti animací
-  const p = useMotionValue(progress);
-  p.set(progress);
+  // 0 = mission, 1 = vision
+  const [index, setIndex] = useState<0 | 1>(0);
 
-  // jemnější průběh + jarní vyhlazení
-  const eased = useTransform(p, (v) => {
-    const u = v < 0 ? 0 : v > 1 ? 1 : v;
-    return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+  // Hladký "progres" 0..1 (fáze rotace)
+  const progress = useMotionValue<number>(index);
+  const smooth: MotionValue<number> = useSpring(progress, {
+    stiffness: 260,
+    damping: 28,
+    mass: 0.6,
   });
-  const smooth = useSpring(eased, { stiffness: 300, damping: 26, mass: 0.6 });
 
   // 3D orbit parametry
-  const theta = useTransform(smooth, (v) => v * Math.PI);
-
-  const mSin = useTransform(theta, (t) => Math.sin(t));
-  const mCos = useTransform(theta, (t) => Math.cos(t));
-  const vSin = useTransform(theta, (t) => Math.sin(t + Math.PI));
-  const vCos = useTransform(theta, (t) => Math.cos(t + Math.PI));
-
   const R_PX = 120;
   const MAX_TILT = 28;
   const BASE_SCALE = 0.9;
@@ -39,157 +39,100 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
   const BACK_BLUR = 6;
   const FRONT_BLUR = 0;
 
+  // Úhly a trig funkce
+  const theta = useTransform(smooth, (v) => v * Math.PI);
+  const mSin = useTransform(theta, (t) => Math.sin(t));
+  const mCos = useTransform(theta, (t) => Math.cos(t));
+  const vSin = useTransform(theta, (t) => Math.sin(t + Math.PI));
+  const vCos = useTransform(theta, (t) => Math.cos(t + Math.PI));
+
   // Mission transforms
   const missionX = useTransform(mSin, (s) => `${s * R_PX}px`);
-  const missionScale = useTransform(mCos, (c) => BASE_SCALE + DEPTH_SCALE * (c * 0.999));
-  const missionOpacity = useTransform(mCos, (c) => 0.55 + 0.45 * ((c + 1) / 2));
-  const missionRotateY = useTransform(mSin, (s) => `${-s * MAX_TILT}deg`);
-  const missionBlurPx = useTransform(mCos, (c) => {
-    const t = (c + 1) / 2;
-    return FRONT_BLUR + (1 - t) * BACK_BLUR;
+  // OPRAVA: Když je Mission vpředu (cos ≈ 1), nastavit scale přesně na 1.0
+  const missionScale = useTransform(mCos, (c) => {
+    if (c > 0.9) return 1.0; // Aktivní karta = přesně 1.0
+    return BASE_SCALE + DEPTH_SCALE * (c * 0.999);
   });
+  const missionOpacity = useTransform(mCos, (c) => 0.25 + 0.75 * ((c + 1) / 2)); // 0.25-1.0 místo 0.55-1.0
+  const missionRotateY = useTransform(mSin, (s) => `${-s * MAX_TILT}deg`);
+  
+  // DOČASNĚ: Úplně odstranit blur pro debugging
+  const missionBlurPx = useMotionValue(0);
 
   // Vision transforms
   const visionX = useTransform(vSin, (s) => `${s * R_PX}px`);
-  const visionScale = useTransform(vCos, (c) => BASE_SCALE + DEPTH_SCALE * (c * 0.999));
-  const visionOpacity = useTransform(vCos, (c) => 0.55 + 0.45 * ((c + 1) / 2));
-  const visionRotateY = useTransform(vSin, (s) => `${-s * MAX_TILT}deg`);
-  const visionBlurPx = useTransform(vCos, (c) => {
-    const t = (c + 1) / 2;
-    return FRONT_BLUR + (1 - t) * BACK_BLUR;
+  // OPRAVA: Když je Vision vpředu (cos ≈ 1), nastavit scale přesně na 1.0
+  const visionScale = useTransform(vCos, (c) => {
+    if (c > 0.9) return 1.0; // Aktivní karta = přesně 1.0
+    return BASE_SCALE + DEPTH_SCALE * (c * 0.999);
   });
+  const visionOpacity = useTransform(vCos, (c) => 0.25 + 0.75 * ((c + 1) / 2)); // 0.25-1.0 místo 0.55-1.0
+  const visionRotateY = useTransform(vSin, (s) => `${-s * MAX_TILT}deg`);
+  
+  // DOČASNĚ: Úplně odstranit blur pro debugging
+  const visionBlurPx = useMotionValue(0);
 
   const missionFilter = useTransform(missionBlurPx, (b) => `blur(${b}px)`);
   const visionFilter = useTransform(visionBlurPx, (b) => `blur(${b}px)`);
 
-  // === Stav animace a správné zobrazení karet ===
-  const lastEdgeRef = useRef<'start' | 'end' | null>(null);
-  const [currentCard, setCurrentCard] = useState<'mission' | 'vision'>('mission');
-  const holdTimeRef = useRef<number>(0);
-  const lastCardChangeRef = useRef<number>(0);
-  const scrollAttemptCountRef = useRef<number>(0);
-  const lastScrollAttemptRef = useRef<number>(0);
-  const HOLD_DURATION = 3000; // 3 sekundy držení na kraji před povolením scrollu
-  const CARD_CHANGE_DELAY = 2000; // 2 sekundy po změně karty před povolením scrollu
-  const REQUIRED_SCROLL_ATTEMPTS = 4; // počet scrollů potřebných k opuštění sekce
-  const SCROLL_ATTEMPT_TIMEOUT = 1000; // timeout mezi pokusy o scroll (1 sekunda)
+  // --- Carousel ovládání ---------------------------------------------------
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragStartX = useRef(0);
+  const dragStartProgress = useRef(0);
 
-  useEffect(() => {
-    // Na desktopu tuto logiku nepotřebujeme
-    if (isDesktop) return;
+  const snapTo = (target: 0 | 1) => {
+    setIndex(target);
+    progress.set(target); // spring hladce doběhne
+  };
 
-    // Listener pro detekci pokusů o scroll
-    const handleTouchStart = (e: Event) => {
-      const touchEvent = e as TouchEvent;
-      const now = performance.now();
-      const progress = smooth.get();
-      
-      // Pouze když jsme na krajích sekce
-      if (progress <= 0.02 || progress >= 0.98) {
-        // Reset počítadla pokud uplynul timeout
-        if (now - lastScrollAttemptRef.current > SCROLL_ATTEMPT_TIMEOUT) {
-          scrollAttemptCountRef.current = 0;
-        }
-        
-        lastScrollAttemptRef.current = now;
-        scrollAttemptCountRef.current++;
-        
-        console.log(`Scroll pokus ${scrollAttemptCountRef.current}/${REQUIRED_SCROLL_ATTEMPTS}`);
-      }
-    };
+  const next = () => snapTo(1);
+  const prev = () => snapTo(0);
 
-    // Přidání touch listeneru
-    const sectionEl = document.querySelector('#about-mission');
-    if (sectionEl) {
-      sectionEl.addEventListener('touchstart', handleTouchStart, { passive: true });
-    }
+  const onDragStart = (_evt: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    dragStartX.current = info.point.x;
+    dragStartProgress.current = smooth.get();
+  };
 
-    const unsubscribe = smooth.on('change', (v) => {
-      const now = performance.now();
-      
-      // Hranice s delší hysteréz pro stabilnější detekci
-      const AT_START = v <= 0.02;  // ~2%
-      const AT_END = v >= 0.98;    // ~98%
-      const IN_MIDDLE = v > 0.15 && v < 0.85; // střední pásmo
+  const onDrag = (_evt: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const width = Math.max(el.clientWidth, 1);
+    const deltaX = info.point.x - dragStartX.current;
 
-      // Určení aktuální karty podle pozice
-      const newCard = v < 0.5 ? 'mission' : 'vision';
-      if (newCard !== currentCard) {
-        setCurrentCard(newCard);
-        lastCardChangeRef.current = now; // Zaznamenej čas změny karty
-      }
+    // Převod posunu na změnu progressu (levý tah -> +, pravý tah -> -)
+    const deltaProgress = -deltaX / width; // cca 1× šířka = 1.0 progress
+    const nextVal = clamp(dragStartProgress.current + deltaProgress, 0, 1);
+    progress.set(nextVal);
+  };
 
-      // Reset uprostřed (když odjedeme z okraje)
-      if (IN_MIDDLE && lastEdgeRef.current !== null) {
-        lastEdgeRef.current = null;
-        holdTimeRef.current = 0;
-        scrollAttemptCountRef.current = 0; // Reset počítadla scrollů
-      }
+  const onDragEnd = () => {
+    const v = smooth.get();
+    const target: 0 | 1 = v < 0.5 ? 0 : 1; // jednoduchý threshold
+    snapTo(target);
+  };
 
-      const sectionEl = document.querySelector('#about-mission');
-      if (!sectionEl) return;
-
-      // Kontrola, zda už uplynula doba od změny karty
-      const timeSinceCardChange = now - lastCardChangeRef.current;
-      const cardChangeBlocksScroll = timeSinceCardChange < CARD_CHANGE_DELAY;
-      
-      // Kontrola počtu scroll pokusů
-      const hasEnoughScrollAttempts = scrollAttemptCountRef.current >= REQUIRED_SCROLL_ATTEMPTS;
-
-      // Detekce dosažení kraje
-      if (AT_START && lastEdgeRef.current !== 'start') {
-        lastEdgeRef.current = 'start';
-        holdTimeRef.current = now;
-        
-        // Povolení scrollu nahoru pouze pokud jsou splněny všechny podmínky
-        if (!cardChangeBlocksScroll && hasEnoughScrollAttempts) {
-          sectionEl.dispatchEvent(new Event('mission:allow-snap', { bubbles: true }));
-          scrollAttemptCountRef.current = 0; // Reset po úspěšném opuštění
-        }
-      } else if (AT_END && lastEdgeRef.current !== 'end') {
-        lastEdgeRef.current = 'end';
-        holdTimeRef.current = now;
-        
-        // Časované povolení scrollu dolů s kontrolou scroll pokusů
-        const totalDelay = Math.max(HOLD_DURATION, timeSinceCardChange < CARD_CHANGE_DELAY ? CARD_CHANGE_DELAY - timeSinceCardChange : 0);
-        setTimeout(() => {
-          if (lastEdgeRef.current === 'end' && hasEnoughScrollAttempts) {
-            sectionEl.dispatchEvent(new Event('mission:allow-snap', { bubbles: true }));
-            scrollAttemptCountRef.current = 0; // Reset po úspěšném opuštění
-          }
-        }, totalDelay);
-      }
-
-      // Prodloužené držení na konci pro čtení + dodatečné čekání po změně karty + scroll pokusy
-      if (AT_END && lastEdgeRef.current === 'end' && holdTimeRef.current > 0) {
-        const timeHeld = now - holdTimeRef.current;
-        const timeNeeded = Math.max(HOLD_DURATION, CARD_CHANGE_DELAY);
-        if (timeHeld >= timeNeeded && !cardChangeBlocksScroll && hasEnoughScrollAttempts) {
-          sectionEl.dispatchEvent(new Event('mission:allow-snap', { bubbles: true }));
-          scrollAttemptCountRef.current = 0; // Reset po úspěšném opuštění
-        }
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      if (sectionEl) {
-        sectionEl.removeEventListener('touchstart', handleTouchStart);
-      }
-    };
-  }, [smooth, isDesktop, currentCard]);
-
-  // Na desktopu se tato komponenta nepoužívá, takže můžeme vrátit null
-  if (isDesktop) {
-    return null;
-  }
+  const canPrev = index === 1;
+  const canNext = index === 0;
 
   return (
-    <div className={`lg:hidden relative h-[240svh] ${className}`}>
+    <div className={`relative lg:hidden ${className}`}>
       <div
-        className="sticky top-0 flex items-center justify-center"
+        ref={containerRef}
+        className="relative flex items-center justify-center"
         style={{ height: '100svh', perspective: 1000, WebkitPerspective: 1000 }}
       >
+        {/* Drag overlay (celoplošný) */}
+        <motion.div
+          className="absolute inset-0"
+          drag="x"
+          dragElastic={0}
+          dragMomentum={false}
+          onDragStart={onDragStart}
+          onDrag={onDrag}
+          onDragEnd={onDragEnd}
+          style={{ pointerEvents: 'auto', zIndex: 5 }}
+        />
+
         {/* Vision */}
         <motion.div
           style={{
@@ -199,17 +142,14 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
             opacity: visionOpacity,
             filter: visionFilter,
             transformStyle: 'preserve-3d',
-            zIndex: currentCard === 'vision' ? 2 : 1,
+            zIndex: index === 1 ? 2 : 1,
           }}
           className="absolute w-full px-4"
         >
-          <Card 
-            title={t('about.vision.title')} 
-            text={t('about.vision.content')} 
-          />
+          <Card title={t('about.vision.title')} text={t('about.vision.content')} />
         </motion.div>
 
-        {/* Mission */}
+        {/* Mission - OPRAVENO: scale = 1.0 když je vpředu */}
         <motion.div
           style={{
             x: missionX,
@@ -218,15 +158,45 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
             opacity: missionOpacity,
             filter: missionFilter,
             transformStyle: 'preserve-3d',
-            zIndex: currentCard === 'mission' ? 2 : 1,
+            zIndex: index === 0 ? 2 : 1,
           }}
           className="absolute w-full px-4"
         >
-          <Card 
-            title={t('about.mission.title')} 
-            text={t('about.mission.content')} 
-          />
+          <Card title={t('about.mission.title')} text={t('about.mission.content')} />
         </motion.div>
+
+        {/* Spodní panel: šipky + tečky */}
+        <div className="pointer-events-auto absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 z-20">
+          {/* Šipka zpět */}
+          <button
+            onClick={canPrev ? prev : undefined}
+            aria-label="Previous"
+            disabled={!canPrev}
+            className={`text-2xl select-none transition ${
+              canPrev ? 'opacity-100' : 'opacity-20 pointer-events-none'
+            }`}
+          >
+            ←
+          </button>
+
+          {/* Tečky */}
+          <div className="flex items-center gap-2">
+            <Dot active={index === 0} onClick={() => snapTo(0)} />
+            <Dot active={index === 1} onClick={() => snapTo(1)} />
+          </div>
+
+          {/* Šipka vpřed */}
+          <button
+            onClick={canNext ? next : undefined}
+            aria-label="Next"
+            disabled={!canNext}
+            className={`text-2xl select-none transition ${
+              canNext ? 'opacity-100' : 'opacity-20 pointer-events-none'
+            }`}
+          >
+            →
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -234,11 +204,46 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
 
 export default MobileMissionVision;
 
+// --- Pomocné komponenty ----------------------------------------------------
+
+const Dot: React.FC<{ active: boolean; onClick: () => void }> = ({ active, onClick }) => (
+  <button
+    onClick={onClick}
+    aria-label={active ? 'Current slide' : 'Go to slide'}
+    className={`h-2.5 w-2.5 rounded-full border border-white/30 transition ${
+      active ? 'bg-[#FFED29]' : 'bg-white/20 hover:bg-white/40'
+    }`}
+  />
+);
+
+// 📱 Tablet-friendly typografie (iPad Air apod.) přes clamp
 const Card: React.FC<{ title: string; text: string }> = ({ title, text }) => (
   <div className="mx-auto max-w-md will-change-transform">
-    <h3 className="text-4xl font-bold text-[#FFED29] mb-4 text-center">{title}</h3>
-    <div className="relative bg-white/5 backdrop-blur-lg rounded-3xl p-5 border border-white/10">
-      <p className="text-lg leading-relaxed whitespace-pre-line">{text}</p>
+    <h3
+      className="
+        font-bold text-[#FFED29] mb-4 text-center
+        text-[clamp(2rem,6.8vw,2.9rem)]  /* mob → tablet */
+        lg:text-4xl                         /* desktop: nerelevantní, ale bezpečné */
+      "
+    >
+      {title}
+    </h3>
+    {/* DOČASNĚ: Odstraněno backdrop-blur-lg pro debugging */}
+    <div className="relative bg-white/5 rounded-3xl p-5 border border-white/10">
+      <p
+        className="
+          leading-relaxed whitespace-pre-line
+          text-[clamp(1rem,3.8vw,1.4rem)]  /* mob → tablet čitelnější */
+          lg:text-lg
+        "
+      >
+        {text}
+      </p>
     </div>
   </div>
 );
+
+// --- Utils -----------------------------------------------------------------
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}

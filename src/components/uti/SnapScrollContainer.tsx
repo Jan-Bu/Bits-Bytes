@@ -243,7 +243,7 @@ const SnapScrollContainer = forwardRef<SnapScrollHandle, SnapScrollContainerProp
       const progress =
         rawProgress <= EDGE_EPS ? 0 : rawProgress >= 1 - EDGE_EPS ? 1 : rawProgress;
 
-      // Mission sekce má speciální buffer handling pouze na desktopu
+      // Mission sekce má speciální buffer handling pouze na desktopu (jen vizuální výpočet progressu)
       if (sectionId === MISSION_ID && isDesktop) {
         const activeRange = 1 - (TOP_BUF + BOT_BUF);
         if (activeRange <= 0.01) return progress;
@@ -262,8 +262,6 @@ const SnapScrollContainer = forwardRef<SnapScrollHandle, SnapScrollContainerProp
       if (!isDesktop) return;
       
       const progress = getSectionProgress(MISSION_ID);
-      const now = performance.now();
-
       if (progress <= EDGE_EPS) {
         if (missionEdgeAtRef.current !== 'start') {
           missionEdgeAtRef.current = 'start';
@@ -280,31 +278,16 @@ const SnapScrollContainer = forwardRef<SnapScrollHandle, SnapScrollContainerProp
 
     // === Logika blokování snapu pro mission sekci (pouze desktop) ===
     const missionBlocksSnap = useCallback((idx: number, direction: 1 | -1) => {
-      if (!isDesktop) return false;
-      
+      // ✅ Na desktopu neblokujeme vůbec (snap funguje normálně)
+      if (isDesktop) return false;
+
       const list = sectionsRef.current;
       const sec = list[idx];
       if (!sec || sec.id !== MISSION_ID) return false;
 
-      const progress = getSectionProgress(MISSION_ID);
-
-      // Uprostřed — vždy blokuj, dokud nepřijde "allow" (po animaci A→B)
-      if (progress > EDGE_EPS && progress < 1 - EDGE_EPS) {
-        return !missionAllowRef.current;
-      }
-
-      // Pokud jsme přesně na kraji a allow ještě není, blokuj také
-      if (!missionAllowRef.current) {
-        return true;
-      }
-
-      // Allow je true → snap povol jen správným směrem:
-      if (direction === 1 && progress >= 1 - EDGE_EPS) return false; // dolů z konce
-      if (direction === -1 && progress <= EDGE_EPS) return false;    // nahoru ze startu
-
-      // Špatný směr — blokuj
-      return true;
-    }, [getSectionProgress, isDesktop]);
+      // ✅ Na mobilech snap stejně nepoužíváme – jistota, že neblokujeme.
+      return false;
+    }, [isDesktop]);
 
     // === Kontext ===
     const contextValue = useMemo<SnapScrollContextType>(
@@ -342,7 +325,7 @@ const SnapScrollContainer = forwardRef<SnapScrollHandle, SnapScrollContainerProp
       const direction: 1 | -1 = deltaY > 0 ? 1 : -1;
 
       if (missionBlocksSnap(idx, direction)) {
-        return; // zůstaň v sekci, ať probíhá "progress/animace"
+        return; // (po změně se nestane – na desktopu nikdy neblokujeme)
       }
 
       let targetIdx = idx;
@@ -452,13 +435,12 @@ const SnapScrollContainer = forwardRef<SnapScrollHandle, SnapScrollContainerProp
       const cont = containerRef.current;
       if (!cont) return;
 
-      const handler = (e: Event) => {
+      const handler = (_e: Event) => {
         if (isDesktop) {
-          // Na desktopu standardní logika
+          // Po změně už desktop nikdy neblokujeme, ale necháme tu proměnnou neškodně nastavovat.
           missionAllowRef.current = true;
         } else {
-          // Na mobilu okamžité povolení (už je řízeno z MobileMissionVision)
-          // nic speciálního neděláme, protože na mobilu není snap
+          // Na mobilu snap nepoužíváme.
         }
       };
 
@@ -488,8 +470,7 @@ const SnapScrollContainer = forwardRef<SnapScrollHandle, SnapScrollContainerProp
         updateMissionEdge();
 
         if (missionBlocksSnap(idx, direction)) {
-          // nech nativní scroll běžet pro "progress" uprostřed sekce
-          // ale pokud jsme přesně na kraji a allow ještě není, zabraň odskoku
+          // po změně se to na desktopu nestane
           const secId = list[idx].id;
           if (secId === MISSION_ID) {
             const p = getSectionProgress(MISSION_ID);
@@ -538,7 +519,7 @@ const SnapScrollContainer = forwardRef<SnapScrollHandle, SnapScrollContainerProp
         const list = sectionsRef.current;
         if (!list.length) return;
 
-        // Pokud speciální sekce stále blokuje snap, nedělej nic
+        // Pokud speciální sekce stále blokuje snap, nedělej nic (po změně se to nestane)
         const idx = currentSectionIndex(cont, list);
         if (missionBlocksSnap(idx, 1) || missionBlocksSnap(idx, -1)) return;
 

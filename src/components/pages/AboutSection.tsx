@@ -353,93 +353,118 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
         ref={teamRef}
         id="about-team"
         data-animate
-        className="relative overflow-hidden py-32 px-6 text-center min-h-screen"
+        className="relative overflow-hidden text-center
+             min-h-[100svh] md:min-h-screen
+             flex flex-col"
       >
-        <motion.div
-          initial={{ x: '150vw', y: '-10%' }}
-          animate={
-            hasAnimated
-              ? {
-                x: '0%',
-                y: '0%',
-                transition: { duration: 1, ease: [0.9, 0.05, 0.15, 0.95] },
-              }
-              : {}
-          }
-          className="absolute inset-0 z-0 flex items-center justify-center"
-        >
-          {/* ROTATED WRAPPER s bílým rámečkem */}
-          <div className="relative w-full origin-center -rotate-[3deg]">
-            {/* ŽLUTÝ PANEL s bílým rámečkem a černým outline */}
-            <div
-              className="relative left-[-25%] w-[150%] bg-[#E6D021] py-20 px-6 text-black 
-                         border-y-[16px] border-white"
-            >
-              {/* Nadpis */}
-              <h2
-                className="text-6xl md:text-8xl font-bold mb-16 text-blue-700"
-                style={{
-                  textShadow: `
-                    -20px -20px 0 #000,
-                    -40px -40px 0 rgba(0, 0, 0, 0.4)
-                  `,
-                }}
+        {/* Žlutý panel container - flex-1 aby zabral většinu místa */}
+        <div className="flex-1 flex items-center justify-center px-6 py-12 md:py-32">
+          <motion.div
+            initial={{ x: '150vw', y: '-10%' }}
+            animate={
+              hasAnimated
+                ? {
+                  x: '0%',
+                  y: '0%',
+                  transition: { duration: 1, ease: [0.9, 0.05, 0.15, 0.95] },
+                }
+                : {}
+            }
+            className="w-full"
+          >
+            {/* ROTATED WRAPPER s bílým rámečkem */}
+            <div className="relative w-full origin-center -rotate-[3deg] sm:-rotate-[2deg] md:-rotate-[3deg]">
+              {/* ŽLUTÝ PANEL s bílým rámečkem a černým outline */}
+              <div
+                className="relative left-[-25%] w-[150%] bg-[#E6D021]
+                     py-6 sm:py-12 md:py-16 lg:py-20
+                     px-4 sm:px-6
+                     text-black border-y-[6px] sm:border-y-[12px] md:border-y-[16px] border-white"
               >
-                {t('about.team.title')}
-              </h2>
+                {/* Nadpis */}
+                <h2
+                  className="font-bold mb-6 sm:mb-12 md:mb-16 text-blue-700
+                       text-[clamp(2rem,8vw,5rem)] sm:text-[clamp(2.5rem,7vw,6rem)]
+                       md:text-6xl lg:text-8xl"
+                  style={{
+                    textShadow: `
+                calc(clamp(8px, 2vw, 20px) * -1)
+                calc(clamp(8px, 2vw, 20px) * -1)
+                0 #000,
+                calc(clamp(16px, 4vw, 40px) * -1)
+                calc(clamp(16px, 4vw, 40px) * -1)
+                0 rgba(0, 0, 0, 0.4)
+              `,
+                  }}
+                >
+                  {t('about.team.title')}
+                </h2>
 
-              {/* Postavy */}
-              <div className="flex flex-wrap justify-center gap-64">
-                {/* Bits */}
-                <div className="flex flex-col items-center gap-2 group">
-                  <div className="relative w-60 h-60 rounded-full overflow-hidden">
-                    <img
-                      src="/Bits_static.png"
-                      alt="Bits"
-                      className="absolute inset-0 w-full h-full object-contain scale-[2.2] group-hover:hidden"
-                    />
-                    <img
-                      src="/Bits_animated.gif"
-                      alt="Bits animated"
-                      className="absolute inset-0 w-full h-full object-contain scale-[2.2] hidden group-hover:block"
-                    />
+                {/* Postavy - responzivní layout */}
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-16 md:gap-32 lg:gap-64">
+                  {/* Bits */}
+                  <div className="flex flex-col items-center gap-2 group">
+                    <div className="relative rounded-full overflow-hidden
+                              w-[clamp(110px,24vw,220px)] h-[clamp(110px,24vw,220px)]
+                              sm:w-[clamp(140px,20vw,200px)] sm:h-[clamp(140px,20vw,200px)]
+                              md:w-48 md:h-48 lg:w-60 lg:h-60">
+                      <img
+                        src="/Bits_static.png"
+                        alt="Bits"
+                        className="absolute inset-0 w-full h-full object-contain
+                             scale-[2.0] sm:scale-[2.0] md:scale-[2.2]
+                             group-hover:hidden"
+                      />
+                      <img
+                        src="/Bits_animated.gif"
+                        alt="Bits animated"
+                        className="absolute inset-0 w-full h-full object-contain
+                             scale-[2.0] sm:scale-[2.0] md:scale-[2.2]
+                             hidden group-hover:block"
+                      />
+                    </div>
+                    <p className="text-blue-700 font-semibold text-[clamp(0.95rem,4vw,1.5rem)] sm:text-xl md:text-2xl lg:text-3xl">
+                      {t('about.team.bits')}
+                    </p>
                   </div>
-                  <p className="text-3xl text-blue-700 font-semibold">
-                    {t('about.team.bits')}
-                  </p>
-                </div>
 
-                {/* Bytes */}
-                <div className="flex flex-col items-center gap-2 group">
-                  <div className="relative w-60 h-60 rounded-full overflow-hidden">
-                    <img
-                      src="/Byte_static.png"
-                      alt="Bytes"
-                      className="absolute inset-0 w-full h-full object-contain scale-[1.2] group-hover:hidden"
-                    />
-                    <img
-                      src="/Byte_animated.gif"
-                      alt="Bytes animated"
-                      className="absolute inset-0 w-full h-full object-contain scale-[1.2] hidden group-hover:block"
-                    />
+                  {/* Bytes */}
+                  <div className="flex flex-col items-center gap-2 group">
+                    <div className="relative rounded-full overflow-hidden
+                              w-[clamp(110px,24vw,220px)] h-[clamp(110px,24vw,220px)]
+                              sm:w-[clamp(140px,20vw,200px)] sm:h-[clamp(140px,20vw,200px)]
+                              md:w-48 md:h-48 lg:w-60 lg:h-60">
+                      <img
+                        src="/Byte_static.png"
+                        alt="Bytes"
+                        className="absolute inset-0 w-full h-full object-contain scale-[1.1] group-hover:hidden"
+                      />
+                      <img
+                        src="/Byte_animated.gif"
+                        alt="Bytes animated"
+                        className="absolute inset-0 w-full h-full object-contain scale-[1.1] hidden group-hover:block"
+                      />
+                    </div>
+                    <p className="text-blue-700 font-semibold text-[clamp(0.95rem,4vw,1.5rem)] sm:text-xl md:text-2xl lg:text-3xl">
+                      {t('about.team.bytes')}
+                    </p>
                   </div>
-                  <p className="text-3xl text-blue-700 font-semibold">
-                    {t('about.team.bytes')}
-                  </p>
                 </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
-        {/* Tlačítka pod žlutým pruhem */}
-        <div className="h-[640px]" aria-hidden="true" />
-
-        <div className="mt-[300px] flex justify-center gap-6 relative z-50">
+        {/* Tlačítka na spodku sekce */}
+        <div className="px-6 pb-8 pt-4 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
           {/* BACK → MainSection (home) */}
           <button
             onClick={() => navigate('/')}
-            className="bg-[#E6D021] hover:bg-blue-700 text-lg text-black font-bold py-3 px-8 rounded-full shadow-lg shadow-black transition-all duration-300"
+            className="bg-[#E6D021] hover:bg-blue-700 text-black font-bold
+               py-2 px-6 sm:py-3 sm:px-8
+               text-base sm:text-lg
+               rounded-full shadow-lg shadow-black transition-all duration-300
+               w-full sm:w-auto max-w-[200px]"
           >
             {t('about.button.back')}
           </button>
@@ -447,7 +472,11 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           {/* CONTACT → ContactSection */}
           <button
             onClick={() => navigate('/contact')}
-            className="bg-[#E6D021] hover:bg-blue-700 text-lg text-black font-bold py-3 px-8 rounded-full shadow-lg shadow-black transition-all duration-300"
+            className="bg-[#E6D021] hover:bg-blue-700 text-black font-bold
+               py-2 px-6 sm:py-3 sm:px-8
+               text-base sm:text-lg
+               rounded-full shadow-lg shadow-black transition-all duration-300
+               w-full sm:w-auto max-w-[200px]"
           >
             {t('about.button.contact')}
           </button>
@@ -458,8 +487,8 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
 };
 
 // Wrapper komponenta pro Mission/Vision sekci
-const MissionVisionWrapper: React.FC<{ 
-  t: (key: string) => string; 
+const MissionVisionWrapper: React.FC<{
+  t: (key: string) => string;
   visibleSections: Set<string>;
 }> = ({ t, visibleSections }) => {
   const isDesktop = useIsDesktop();
