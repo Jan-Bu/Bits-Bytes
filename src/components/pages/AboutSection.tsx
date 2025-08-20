@@ -16,11 +16,163 @@ declare global {
 }
 
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import SnapScrollContainer, { type SnapScrollHandle, useIsDesktop } from '../uti/SnapScrollContainer';
 import { IdeaToRealityBar } from '../uti/IdeaToRealityBar';
 import MobileMissionVision from '../uti/MobileMissionVision';
+
+/* =========================
+   FLOATING MENU (FAB)
+   ========================= */
+const FloatingMenu: React.FC<{
+  onBack: () => void;
+  onContact: () => void;
+  getScrollEl?: () => (HTMLElement | Document | null);
+}> = ({ onBack, onContact, getScrollEl }) => {
+  const [open, setOpen] = React.useState(false);
+  const boxRef = React.useRef<HTMLDivElement>(null);
+
+  // zavření na klik mimo a na Escape
+  React.useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!boxRef.current) return;
+      if (!boxRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, []);
+
+  // zavřít menu při scrollu (komfort)
+  React.useEffect(() => {
+    const elMaybe = getScrollEl?.();
+    const el =
+      (elMaybe && 'addEventListener' in elMaybe ? elMaybe : null) ??
+      (document.scrollingElement as unknown as HTMLElement) ??
+      window;
+
+    const onScroll = () => setOpen(false);
+    // @ts-ignore
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      // @ts-ignore
+      el.removeEventListener('scroll', onScroll);
+    };
+  }, [getScrollEl]);
+
+  // jemný „bounce“ při klepnutí
+  const btnSpring = { type: 'spring', stiffness: 500, damping: 18 };
+
+  return (
+    <div
+      ref={boxRef}
+      className="fixed z-[60] top-3 right-3 md:top-5 md:right-5"
+      aria-live="polite"
+    >
+      <div className="relative">
+        {/* FAB toggle – animace jen na ikoně */}
+        <motion.button
+          type="button"
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          onClick={() => setOpen((v) => !v)}
+          whileTap={{ scale: 0.96 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 } as const}
+          className="h-12 w-12 md:h-14 md:w-14 
+             grid place-items-center relative overflow-hidden
+             bg-transparent border-0 shadow-none"   // 👈 průhledný button
+        >
+          <div className="relative h-6 w-6">
+            <AnimatePresence mode="sync" initial={false}>
+              {!open && (
+                <motion.div
+                  key="menu"
+                  className="absolute inset-0"
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                >
+                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                    <path
+                      d="M4 6h16M4 12h16M4 18h16"
+                      stroke="#FFED29"   // 👈 žlutá barva
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </motion.div>
+              )}
+              {open && (
+                <motion.div
+                  key="close"
+                  className="absolute inset-0"
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                >
+                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                    <path
+                      d="M18 6L6 18M6 6l12 12"
+                      stroke="#FFED29"   // 👈 žlutá barva
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.button>
+
+        {/* Panel bez animace a bez gooey/progress ringu */}
+        {open && (
+          <ul
+            className="absolute right-0 mt-2 w-[min(88vw,260px)]
+                       rounded-2xl overflow-hidden
+                       bg-black/70 backdrop-blur-lg border border-white/20
+                       shadow-2xl"
+          >
+            <li>
+              <button
+                onClick={() => { setOpen(false); onBack(); }}
+                className="w-full text-left px-4 py-3 flex items-center gap-3
+                           text-white hover:bg-white/10 transition"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Back</span>
+              </button>
+            </li>
+            <li className="border-t border-white/10" />
+            <li>
+              <button
+                onClick={() => { setOpen(false); onContact(); }}
+                className="w-full text-left px-4 py-3 flex items-center gap-3
+                           text-white hover:bg-white/10 transition"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path d="M4 6h16v12H4z" fill="none" stroke="currentColor" strokeWidth="2" />
+                  <path d="M22 6l-10 7L2 6" fill="none" stroke="currentColor" strokeWidth="2" />
+                </svg>
+                <span>Contact</span>
+              </button>
+            </li>
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
 
 interface AboutSectionProps {
   t: (key: string) => string;
@@ -71,6 +223,9 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       className="relative overflow-y-auto text-white font-jersey overscroll-contain h-[calc(var(--vh,1vh)*100)] md:h-screen"
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
+      {/* FLOATING MENU – vždy nahoře */}
+      <FloatingMenu onBack={() => navigate('/')} onContact={() => navigate('/contact')} />
+
       {/* FIXED background */}
       <div
         className="
@@ -151,12 +306,12 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           className="
             md:hidden w-full max-w-7xl
             grid gap-2
-            h-[90svh]            /* = 100% reálné výšky viewportu i na iOS */
-            grid-rows-[53%_15%_6%_20%]  /* text / duo / nudle / 3D */
+            h-[90svh]
+            grid-rows-[53%_15%_6%_20%]
           "
         >
           {/* 1) TEXT FULL */}
-          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/10 px-6 py-3 h-full">
+          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/30 px-6 py-3 h-full">
             <h2 className="text-[clamp(2.1rem,8vw,2.8rem)] font-bold text-yellow-300 leading-tight">
               {t('about.skills.title')}
             </h2>
@@ -168,11 +323,11 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           {/* 2) ŘÁDEK: LEVO PC.gif, PRAVO VIDEO */}
           <div className="grid grid-cols-2 gap-3 h-full">
             {/* PC.gif (left) */}
-            <div className="rounded-3xl overflow-hidden border border-white/10 bg-black h-full">
+            <div className="rounded-3xl overflow-hidden border border-white/30 bg-black h-full">
               <img src="/PC.gif" alt="Computer Animation" className="w-full h-full object-contain" />
             </div>
             {/* VIDEO (right) */}
-            <div className="rounded-3xl overflow-hidden border border-white/10 bg-black h-full">
+            <div className="rounded-3xl overflow-hidden border border-white/30 bg-black h-full">
               <video
                 src="/videos/catalog.mp4"
                 autoPlay
@@ -185,7 +340,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           </div>
 
           {/* 3) DLOUHÁ NUDLE — PROGRESS */}
-          <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-black h-full">
+          <div className="relative rounded-3xl overflow-hidden border border-white/30 bg-black h-full">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full h-full">
                 <IdeaToRealityBar />
@@ -194,7 +349,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           </div>
 
           {/* 4) 3D MODEL FULL WIDTH */}
-          <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-black flex items-center justify-center h-full">
+          <div className="relative rounded-3xl overflow-hidden border border-white/30 bg-black flex items-center justify-center h-full">
             <model-viewer
               src="/anvil.glb"
               alt="Anvil 3D Model"
@@ -234,7 +389,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           {/* LEVÝ TEXT BOX */}
           <div
             className="
-              bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/10
+              bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/30
               flex flex-col justify-center gap-4 h-full
               md:px-[clamp(1.25rem,4vw,3.5rem)]
               md:py-[clamp(0.75rem,2vw,1.25rem)]
@@ -269,7 +424,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             {/* Box A — levý sloupec, přes 2 řádky */}
             <div
               className="
-                row-span-2 bg-white/10 backdrop-blur-lg rounded-3xl p-0 border border-white/10
+                row-span-2 bg-white/30 backdrop-blur-lg rounded-3xl p-0 border border-white/10
                 h-[480px] w-full overflow-hidden
                 md:h-[clamp(360px,50vw,480px)]
                 lg:h-[480px]
@@ -288,7 +443,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             {/* Box B — horní řádek s kovadlinou */}
             <div
               className="
-                relative bg-black backdrop-blur-lg rounded-3xl border border-white/10
+                relative bg-black backdrop-blur-lg rounded-3xl border border-white/30
                 h-full flex items-center justify-center p-4 overflow-hidden
                 md:p-[clamp(0.5rem,1.2vw,1rem)]
               "
@@ -329,16 +484,12 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             </div>
 
             {/* Box B — dolní řádek */}
-            <div className="row-span-2 h-full w-full overflow-hidden rounded-3xl bg-black">
-              <img
-                src="/PC.gif"
-                alt="Computer Animation"
-                className="w-full h-full object-contain"
-              />
+            <div className="row-span-2 h-full w-full overflow-hidden rounded-3xl border border-white/30 bg-black">
+              <img src="/PC.gif" alt="Computer Animation" className="w-full h-full object-contain" />
             </div>
 
             {/* Box A — pravý sloupec, přes 2 řádky */}
-            <div className="h-full w-full overflow-hidden rounded-3xl bg-black">
+            <div className="h-full w-full overflow-hidden rounded-3xl border border-white/30 bg-black">
               <IdeaToRealityBar />
             </div>
           </div>
@@ -404,10 +555,12 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
                 <div className="flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-16 md:gap-32 lg:gap-64">
                   {/* Bits */}
                   <div className="flex flex-col items-center gap-2 group">
-                    <div className="relative rounded-full overflow-hidden
+                    <div
+                      className="relative rounded-full overflow-hidden
                               w-[clamp(110px,24vw,220px)] h-[clamp(110px,24vw,220px)]
                               sm:w-[clamp(140px,20vw,200px)] sm:h-[clamp(140px,20vw,200px)]
-                              md:w-48 md:h-48 lg:w-60 lg:h-60">
+                              md:w-48 md:h-48 lg:w-60 lg:h-60"
+                    >
                       <img
                         src="/Bits_static.png"
                         alt="Bits"
@@ -430,10 +583,12 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
 
                   {/* Bytes */}
                   <div className="flex flex-col items-center gap-2 group">
-                    <div className="relative rounded-full overflow-hidden
+                    <div
+                      className="relative rounded-full overflow-hidden
                               w-[clamp(110px,24vw,220px)] h-[clamp(110px,24vw,220px)]
                               sm:w-[clamp(140px,20vw,200px)] sm:h-[clamp(140px,20vw,200px)]
-                              md:w-48 md:h-48 lg:w-60 lg:h-60">
+                              md:w-48 md:h-48 lg:w-60 lg:h-60"
+                    >
                       <img
                         src="/Byte_static.png"
                         alt="Bytes"
@@ -455,32 +610,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           </motion.div>
         </div>
 
-        {/* Tlačítka na spodku sekce */}
-        <div className="px-6 pb-8 pt-4 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
-          {/* BACK → MainSection (home) */}
-          <button
-            onClick={() => navigate('/')}
-            className="bg-[#E6D021] hover:bg-blue-700 text-black font-bold
-               py-2 px-6 sm:py-3 sm:px-8
-               text-base sm:text-lg
-               rounded-full shadow-lg shadow-black transition-all duration-300
-               w-full sm:w-auto max-w-[200px]"
-          >
-            {t('about.button.back')}
-          </button>
-
-          {/* CONTACT → ContactSection */}
-          <button
-            onClick={() => navigate('/contact')}
-            className="bg-[#E6D021] hover:bg-blue-700 text-black font-bold
-               py-2 px-6 sm:py-3 sm:px-8
-               text-base sm:text-lg
-               rounded-full shadow-lg shadow-black transition-all duration-300
-               w-full sm:w-auto max-w-[200px]"
-          >
-            {t('about.button.contact')}
-          </button>
-        </div>
+        {/* ⤵️ Spodní tlačítka zrušena – nahrazuje je FloatingMenu */}
       </section>
     </SnapScrollContainer>
   );

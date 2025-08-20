@@ -27,8 +27,8 @@ export const IdeaToRealityBar: React.FC<IdeaToRealityBarProps> = ({ className = 
       className={`w-full h-full flex flex-col items-center justify-center font-jersey
                   text-[clamp(1rem,3.2vw,1.25rem)]
                   pt-[clamp(6px,1.8vw,12px)]
-                  pb-[clamp(6px,1.8vw,12px)]
-                  px-[clamp(6px,1.5vw,12px)]
+                  pb-[clamp(16px,1.8vw,12px)]
+                  px-[clamp(24px,1.5vw,28px)]
                   gap-[clamp(4px,1vw,8px)] ${className}`}
     >
       {/* Fáze */}
