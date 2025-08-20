@@ -7,9 +7,13 @@
   src: url('/fonts/Jersey25-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 html, body {
   overflow-x: hidden;
+}
+
+body {
+  font-family: 'Jersey 25', sans-serif;
 }

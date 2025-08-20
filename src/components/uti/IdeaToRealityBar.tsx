@@ -8,9 +8,7 @@ const stages = [
   { text: '✅ Done.',        color: '#00FF99' },
 ];
 
-type IdeaToRealityBarProps = {
-  className?: string;
-};
+type IdeaToRealityBarProps = { className?: string };
 
 export const IdeaToRealityBar: React.FC<IdeaToRealityBarProps> = ({ className = '' }) => {
   const [stageIndex, setStageIndex] = useState(0);
@@ -31,7 +29,6 @@ export const IdeaToRealityBar: React.FC<IdeaToRealityBarProps> = ({ className = 
                   px-[clamp(24px,1.5vw,28px)]
                   gap-[clamp(4px,1vw,8px)] ${className}`}
     >
-      {/* Fáze */}
       <AnimatePresence mode="wait">
         <motion.div
           key={stages[stageIndex].text}
@@ -46,17 +43,22 @@ export const IdeaToRealityBar: React.FC<IdeaToRealityBarProps> = ({ className = 
         </motion.div>
       </AnimatePresence>
 
-      {/* Track: padding na celé šířce (platí pro šedé pozadí i barevnou výplň) */}
+      {/* TRACK */}
       <div
         className="
-          w-full
-          h-[clamp(5px,1.5vw,12px)] min-h-[3px]
+          relative w-full
+          h-2.5 md:h-3           /* celočíselné hodnoty → žádné půl pixely */
           bg-white/20 rounded-full overflow-hidden
-          
+          leading-none           /* jistota že nic “nevyčnívá” */
         "
       >
+        {/* FILL */}
         <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-[#A54EFF] to-[#FFED29]"
+          className="
+            absolute left-0 top-0 h-full
+            rounded-full bg-gradient-to-r from-[#A54EFF] to-[#FFED29]
+            block [backface-visibility:hidden] [-webkit-transform:translateZ(0)] [transform:translateZ(0)]
+          "
           initial={{ width: 0 }}
           animate={{ width: `${((stageIndex + 1) / stages.length) * 100}%` }}
           transition={{ duration: 1.4, ease: 'easeInOut' }}

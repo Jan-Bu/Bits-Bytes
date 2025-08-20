@@ -15,14 +15,11 @@ type Props = {
 };
 
 const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
-  // 🚫 Na desktopu neren­derovat (PC má snap scroll)
   const isDesktop = useIsDesktop();
   if (isDesktop) return null;
 
-  // 0 = mission, 1 = vision
   const [index, setIndex] = useState<0 | 1>(0);
 
-  // Hladký "progres" 0..1 (fáze rotace)
   const progress = useMotionValue<number>(index);
   const smooth: MotionValue<number> = useSpring(progress, {
     stiffness: 260,
@@ -30,77 +27,61 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
     mass: 0.6,
   });
 
-  // 3D orbit parametry
   const R_PX = 120;
   const MAX_TILT = 28;
   const BASE_SCALE = 0.9;
   const DEPTH_SCALE = 0.12;
-  const BACK_BLUR = 6;
-  const FRONT_BLUR = 0;
 
-  // Úhly a trig funkce
   const theta = useTransform(smooth, (v) => v * Math.PI);
   const mSin = useTransform(theta, (t) => Math.sin(t));
   const mCos = useTransform(theta, (t) => Math.cos(t));
   const vSin = useTransform(theta, (t) => Math.sin(t + Math.PI));
   const vCos = useTransform(theta, (t) => Math.cos(t + Math.PI));
 
-  // Mission transforms
   const missionX = useTransform(mSin, (s) => `${s * R_PX}px`);
-  const missionScale = useTransform(mCos, (c) => {
-    if (c > 0.9) return 1.0; // Aktivní karta = přesně 1.0
-    return BASE_SCALE + DEPTH_SCALE * (c * 0.999);
-  });
+  const missionScale = useTransform(mCos, (c) => (c > 0.9 ? 1.0 : BASE_SCALE + DEPTH_SCALE * (c * 0.999)));
   const missionOpacity = useTransform(mCos, (c) => 0.1 + 0.9 * ((c + 1) / 2));
   const missionRotateY = useTransform(mSin, (s) => `${-s * MAX_TILT}deg`);
 
-  // Vision transforms
   const visionX = useTransform(vSin, (s) => `${s * R_PX}px`);
-  const visionScale = useTransform(vCos, (c) => {
-    if (c > 0.9) return 1.0; // Aktivní karta = přesně 1.0
-    return BASE_SCALE + DEPTH_SCALE * (c * 0.999);
-  });
+  const visionScale = useTransform(vCos, (c) => (c > 0.9 ? 1.0 : BASE_SCALE + DEPTH_SCALE * (c * 0.999)));
   const visionOpacity = useTransform(vCos, (c) => 0.1 + 0.9 * ((c + 1) / 2));
   const visionRotateY = useTransform(vSin, (s) => `${-s * MAX_TILT}deg`);
 
-  // Blur – můžeš vrátit BACK_BLUR/FRONT_BLUR kdykoliv
   const missionBlurPx = useMotionValue(0);
   const visionBlurPx = useMotionValue(0);
   const missionFilter = useTransform(missionBlurPx, (b) => `blur(${b}px)`);
   const visionFilter = useTransform(visionBlurPx, (b) => `blur(${b}px)`);
 
-  // --- Ovládání -------------------------------------------------------------
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const snapTo = (target: 0 | 1) => {
     setIndex(target);
     progress.set(target);
   };
-
   const next = () => snapTo(1);
   const prev = () => snapTo(0);
 
-  // Tap-to-switch (klepnutí kamkoliv přepne)
   const tapToggle = () => snapTo(index === 0 ? 1 : 0);
 
   const canPrev = index === 1;
   const canNext = index === 0;
 
   return (
-    <div className={`relative lg:hidden ${className}`}>
+    <div className={`relative lg:hidden overflow-x-hidden ${className}`}>
       <div
         ref={containerRef}
-        className="relative flex items-center justify-center"
+        className="relative flex items-center justify-center overflow-x-hidden"
         style={{ height: '100svh', perspective: 1000, WebkitPerspective: 1000 }}
       >
-        {/* TAP overlay – klepnutí kamkoliv přepne kartu */}
+        {/* TAP overlay – klepnutí přepne, ale neblokuje vertikální scroll */}
         <motion.button
           type="button"
           aria-label="Toggle card"
           className="absolute inset-0 z-10"
-          onPointerDown={(e) => { e.preventDefault(); }} // potlačí nativní pan
           onClick={tapToggle}
-          style={{ touchAction: 'none', background: 'transparent' }}
+          // ✅ povol pouze pan-y → žádný horizontální swipe/scroll
+          style={{ touchAction: 'pan-y', background: 'transparent' }}
         />
 
         {/* Vision */}
@@ -135,9 +116,8 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
           <Card title={t('about.mission.title')} text={t('about.mission.content')} />
         </motion.div>
 
-        {/* Spodní panel: šipky + tečky */}
+        {/* Spodní panel: šipky + tečky (beze změny vizuálu/behavioru) */}
         <div className="pointer-events-auto absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 z-20">
-          {/* Šipka zpět */}
           <button
             onClick={canPrev ? prev : undefined}
             aria-label="Previous"
@@ -147,13 +127,11 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
             ←
           </button>
 
-          {/* Tečky */}
           <div className="flex items-center gap-2">
             <Dot active={index === 0} onClick={() => snapTo(0)} />
             <Dot active={index === 1} onClick={() => snapTo(1)} />
           </div>
 
-          {/* Šipka vpřed */}
           <button
             onClick={canNext ? next : undefined}
             aria-label="Next"
@@ -170,8 +148,6 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
 
 export default MobileMissionVision;
 
-// --- Pomocné komponenty ----------------------------------------------------
-
 const Dot: React.FC<{ active: boolean; onClick: () => void }> = ({ active, onClick }) => (
   <button
     onClick={onClick}
@@ -182,33 +158,15 @@ const Dot: React.FC<{ active: boolean; onClick: () => void }> = ({ active, onCli
   />
 );
 
-// 📱 Typografie přes clamp (mob → tablet), desktop se na mobilní variantě neren­deruje
 const Card: React.FC<{ title: string; text: string }> = ({ title, text }) => (
   <div className="mx-auto max-w-md will-change-transform">
-    <h3
-      className="
-        font-bold text-[#FFED29] mb-4 text-center
-        text-[clamp(2rem,6.8vw,2.9rem)]
-        lg:text-4xl
-      "
-    >
+    <h3 className="font-bold text-[#FFED29] mb-4 text-center text-[clamp(2rem,6.8vw,2.9rem)] lg:text-4xl">
       {title}
     </h3>
     <div className="relative bg-white/5 rounded-3xl p-5 border border-white/10">
-      <p
-        className="
-          leading-relaxed whitespace-pre-line
-          text-[clamp(1rem,3.8vw,1.4rem)]
-          lg:text-lg
-        "
-      >
+      <p className="leading-relaxed whitespace-pre-line text-[clamp(1rem,3.8vw,1.4rem)] lg:text-lg">
         {text}
       </p>
     </div>
   </div>
 );
-
-// --- Utils -----------------------------------------------------------------
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
