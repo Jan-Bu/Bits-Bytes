@@ -87,7 +87,7 @@ const FloatingMenu: React.FC<{
           transition={{ type: 'spring', stiffness: 420, damping: 28 } as const}
           className="h-12 w-12 md:h-14 md:w-14 
              grid place-items-center relative overflow-hidden
-             bg-transparent border-0 shadow-none"   // 👈 průhledný button
+             bg-transparent border-0 shadow-none"
         >
           <div className="relative h-6 w-6">
             <AnimatePresence mode="sync" initial={false}>
@@ -103,7 +103,7 @@ const FloatingMenu: React.FC<{
                   <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
                     <path
                       d="M4 6h16M4 12h16M4 18h16"
-                      stroke="#FFED29"   // 👈 žlutá barva
+                      stroke="#FFED29"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -122,7 +122,7 @@ const FloatingMenu: React.FC<{
                   <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
                     <path
                       d="M18 6L6 18M6 6l12 12"
-                      stroke="#FFED29"   // 👈 žlutá barva
+                      stroke="#FFED29"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -133,7 +133,7 @@ const FloatingMenu: React.FC<{
           </div>
         </motion.button>
 
-        {/* Panel bez animace a bez gooey/progress ringu */}
+        {/* Panel */}
         {open && (
           <ul
             className="absolute right-0 mt-2 w-[min(88vw,260px)]
@@ -207,9 +207,50 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     if (isInView && !hasAnimated) setHasAnimated(true);
   }, [isInView, hasAnimated]);
 
+  /* ==========
+   * SOUND: reuse jediného <audio>, preload="auto", priming po 1. gestu,
+   * currentTime=0 před play()
+   * ========== */
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const el = new Audio('/sounds/boink.mp3');
+    el.preload = 'auto';
+    el.crossOrigin = 'anonymous'; // když budeš mít CDN, vyhneš se CORS problémům
+    audioElRef.current = el;
+
+    // odemknout audio stack prvním gestem uživatele (mobile Safari apod.)
+    const unlock = () => {
+      el.muted = true;
+      el.play()
+        .then(() => {
+          el.pause();
+          el.currentTime = 0; // připrav na okamžité přehrání
+          el.muted = false;
+        })
+        .catch(() => { /* ignoruj – jen priming */ });
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('mousedown', unlock);
+    };
+
+    window.addEventListener('touchstart', unlock, { passive: true });
+    window.addEventListener('mousedown', unlock);
+
+    return () => {
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('mousedown', unlock);
+    };
+  }, []);
+
   const playSound = () => {
-    const audio = new Audio('/sounds/boink.mp3');
-    audio.play();
+    const el = audioElRef.current;
+    if (!el) return;
+    try {
+      el.currentTime = 0; // ✅ zajistí “klik” od začátku bez latence
+      void el.play();
+    } catch {
+      // no-op
+    }
   };
 
   // IntersectionObserver pro fade-in sekcí
@@ -298,8 +339,8 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             className="object-contain cursor-pointer select-none"
             style={{ width: 'clamp(140px, 20vmin, 320px)', height: 'clamp(140px, 20vmin, 320px)' }}
             onClick={() => {
-              playSound();
-              snapRef.current?.jumpTo('about-skills');
+              playSound();                // ✅ nejdřív zvuk
+              snapRef.current?.jumpTo('about-skills'); // potom navigace
             }}
           />
         </div>
@@ -309,36 +350,33 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       <section
         id="about-skills"
         data-animate
-        className={`min-h-screen flex items-center justify-center px-6 transition-all duration-1000 delay-100
-          ${visibleSections.has('about-skills') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
-        `}
+        className={`min-h-screen flex items-center justify-center px-6 overflow-x-hidden transition-all duration-1000 delay-100
+    ${visibleSections.has('about-skills') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+  `}
       >
-        {/* === MOBILE (<md) layout — přesný fit do viewportu === */}
+        {/* === MOBILE (<md) layout — bez pevné výšky, žádný vnitřní scroll === */}
         <div
           className="
-            md:hidden w-full max-w-7xl
-            grid gap-2
-            h-[90svh]
-            grid-rows-[53%_15%_6%_20%]
-          "
+      md:hidden w-full max-w-7xl
+      grid gap-2
+      [&>*]:min-h-0
+    "
         >
-          {/* 1) TEXT FULL */}
-          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/30 px-6 py-3 h-full">
-            <h2 className="text-[clamp(2.1rem,8vw,2.8rem)] font-bold text-yellow-300 leading-tight">
+          {/* 1) TEXT FULL (auto height) */}
+          <div className="bg-black backdrop-blur-lg rounded-3xl border border-white/30 px-6 py-4">
+            <h2 className="text-[clamp(2rem,8vw,2.6rem)] font-bold text-yellow-300 leading-tight">
               {t('about.skills.title')}
             </h2>
-            <p className="mt-2 text-[clamp(1rem,4.5vw,1.3rem)] whitespace-pre-line leading-relaxed text-white">
+            <p className="mt-2 text-[clamp(0.95rem,3.8vw,1.15rem)] whitespace-pre-line leading-snug break-words hyphens-auto text-white">
               {t('about.skills.content')}
             </p>
           </div>
 
           {/* 2) ŘÁDEK: LEVO PC.gif, PRAVO VIDEO */}
-          <div className="grid grid-cols-2 gap-3 h-full">
-            {/* PC.gif (left) */}
+          <div className="grid grid-cols-2 gap-3 h-[38vw] min-h-[120px] max-h-[220px]">
             <div className="rounded-3xl overflow-hidden border border-white/30 bg-black h-full">
               <img src="/PC.gif" alt="Computer Animation" className="w-full h-full object-contain" />
             </div>
-            {/* VIDEO (right) */}
             <div className="rounded-3xl overflow-hidden border border-white/30 bg-black h-full">
               <video
                 src="/videos/catalog.mp4"
@@ -352,16 +390,16 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           </div>
 
           {/* 3) DLOUHÁ NUDLE — PROGRESS */}
-          <div className="relative rounded-3xl overflow-hidden border border-white/30 bg-black h-full">
+          <div className="relative rounded-3xl overflow-hidden border border-white/30 bg-black h-[12vw] min-h-[44px] max-h-[72px]">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full h-full">
+              <div className="w-full">
                 <IdeaToRealityBar />
               </div>
             </div>
           </div>
 
           {/* 4) 3D MODEL FULL WIDTH */}
-          <div className="relative rounded-3xl overflow-hidden border border-white/30 bg-black flex items-center justify-center h-full">
+          <div className="relative rounded-3xl overflow-hidden border border-white/30 bg-black flex items-center justify-center h-[46vw] min-h-[180px] max-h-[260px]">
             <model-viewer
               src="/anvil.glb"
               alt="Anvil 3D Model"
@@ -377,7 +415,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             />
             <p
               className="absolute right-2 top-1/2 -translate-y-1/2 text-[#FFED29] font-bold
-                         text-[clamp(0.9rem,3.5vw,1.1rem)] select-none"
+                   text-[clamp(0.9rem,3.5vw,1.1rem)] select-none"
               style={{ writingMode: 'vertical-lr' }}
             >
               {t('about.skills.anvil')}
@@ -393,34 +431,34 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
         {/* === DESKTOP/TABLET (md+): původní layout === */}
         <div
           className="
-            hidden md:grid
-            grid-cols-2 gap-[1rem] max-w-7xl w-full items-stretch
-            md:gap-[clamp(0.75rem,1.2vw,1rem)]
-          "
+      hidden md:grid
+      grid-cols-2 gap-[1rem] max-w-7xl w-full items-stretch
+      md:gap-[clamp(0.75rem,1.2vw,1rem)]
+    "
         >
           {/* LEVÝ TEXT BOX */}
           <div
             className="
-              bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/30
-              flex flex-col justify-center gap-4 h-full
-              md:px-[clamp(1.25rem,4vw,3.5rem)]
-              md:py-[clamp(0.75rem,2vw,1.25rem)]
-              md:gap-[clamp(0.5rem,1.2vw,1rem)]
-            "
+        bg-black backdrop-blur-lg rounded-3xl px-16 py-6 border border-white/30
+        flex flex-col justify-center gap-4 h-full
+        md:px-[clamp(1.25rem,4vw,3.5rem)]
+        md:py-[clamp(0.75rem,2vw,1.25rem)]
+        md:gap-[clamp(0.5rem,1.2vw,1rem)]
+      "
           >
             <h2
               className="
-                text-5xl md:text-6xl font-bold text-yellow-300 leading-tight
-                md:text-[clamp(2.25rem,4vw,3.75rem)]
-              "
+          text-5xl md:text-6xl font-bold text-yellow-300 leading-tight
+          md:text-[clamp(2.25rem,4vw,3.75rem)]
+        "
             >
               {t('about.skills.title')}
             </h2>
             <p
               className="
-                text-3xl whitespace-pre-line leading-relaxed text-white
-                md:text-[clamp(1.125rem,2.2vw,1.875rem)]
-              "
+          text-3xl whitespace-pre-line leading-relaxed text-white break-words hyphens-auto
+          md:text-[clamp(1.125rem,2.2vw,1.875rem)]
+        "
             >
               {t('about.skills.content')}
             </p>
@@ -429,18 +467,18 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
           {/* PRAVÁ STRANA: Bento 2×2 */}
           <div
             className="
-              grid grid-cols-2 grid-rows-2 gap-[1rem]
-              md:gap-[clamp(0.5rem,1vw,1rem)]
-            "
+        grid grid-cols-2 grid-rows-2 gap-[1rem]
+        md:gap-[clamp(0.5rem,1vw,1rem)]
+      "
           >
             {/* Box A — levý sloupec, přes 2 řádky */}
             <div
               className="
-                row-span-2 bg-white/30 backdrop-blur-lg rounded-3xl p-0 border border-white/10
-                h-[480px] w-full overflow-hidden
-                md:h-[clamp(360px,50vw,480px)]
-                lg:h-[480px]
-              "
+          row-span-2 bg-white/30 backdrop-blur-lg rounded-3xl p-0 border border-white/10
+          h-[480px] w-full overflow-hidden
+          md:h-[clamp(360px,50vw,480px)]
+          lg:h-[480px]
+        "
             >
               <video
                 src="/videos/catalog.mp4"
@@ -455,10 +493,10 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             {/* Box B — horní řádek s kovadlinou */}
             <div
               className="
-                relative bg-black backdrop-blur-lg rounded-3xl border border-white/30
-                h-full flex items-center justify-center p-4 overflow-hidden
-                md:p-[clamp(0.5rem,1.2vw,1rem)]
-              "
+          relative bg-black backdrop-blur-lg rounded-3xl border border-white/30
+          h-full flex items-center justify-center p-4 overflow-hidden
+          md:p-[clamp(0.5rem,1.2vw,1rem)]
+        "
             >
               <model-viewer
                 src="/anvil.glb"
@@ -476,9 +514,9 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
               <div className="absolute top-1/2 right-2 -translate-y-1/2">
                 <p
                   className="
-                    text-[#FFED29] text-4xl font-bold select-none
-                    md:text-[clamp(1.25rem,2.8vw,2.5rem)]
-                  "
+              text-[#FFED29] text-4xl font-bold select-none
+              md:text-[clamp(1.25rem,2.8vw,2.5rem)]
+            "
                   style={{ writingMode: 'vertical-lr' }}
                 >
                   {t('about.skills.anvil')}
@@ -551,13 +589,10 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
                        md:text-6xl lg:text-8xl"
                   style={{
                     textShadow: `
-                calc(clamp(8px, 2vw, 20px) * -1)
-                calc(clamp(8px, 2vw, 20px) * -1)
-                0 #000,
-                calc(clamp(16px, 4vw, 40px) * -1)
-                calc(clamp(16px, 4vw, 40px) * -1)
-                0 rgba(0, 0, 0, 0.4)
-              `,
+    calc(clamp(10px, 2vw, 25px) * -0.6)
+    calc(clamp(10px, 2vw, 25px) * -0.6)
+    0 rgba(0, 0, 0, 0.4)
+  `,
                   }}
                 >
                   {t('about.team.title')}

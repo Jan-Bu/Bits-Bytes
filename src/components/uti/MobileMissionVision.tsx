@@ -5,7 +5,6 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
-  type PanInfo,
   type MotionValue,
 } from 'framer-motion';
 import { useIsDesktop } from './SnapScrollContainer';
@@ -16,7 +15,7 @@ type Props = {
 };
 
 const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
-  // 🚫 Bezpečnostní brzda: na desktopu neren­derovat (PC má snap scroll)
+  // 🚫 Na desktopu neren­derovat (PC má snap scroll)
   const isDesktop = useIsDesktop();
   if (isDesktop) return null;
 
@@ -48,68 +47,41 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
 
   // Mission transforms
   const missionX = useTransform(mSin, (s) => `${s * R_PX}px`);
-  // OPRAVA: Když je Mission vpředu (cos ≈ 1), nastavit scale přesně na 1.0
   const missionScale = useTransform(mCos, (c) => {
     if (c > 0.9) return 1.0; // Aktivní karta = přesně 1.0
     return BASE_SCALE + DEPTH_SCALE * (c * 0.999);
   });
-  const missionOpacity = useTransform(mCos, (c) => 0.25 + 0.75 * ((c + 1) / 2)); // 0.25-1.0 místo 0.55-1.0
+  const missionOpacity = useTransform(mCos, (c) => 0.1 + 0.9 * ((c + 1) / 2));
   const missionRotateY = useTransform(mSin, (s) => `${-s * MAX_TILT}deg`);
-  
-  // DOČASNĚ: Úplně odstranit blur pro debugging
-  const missionBlurPx = useMotionValue(0);
 
   // Vision transforms
   const visionX = useTransform(vSin, (s) => `${s * R_PX}px`);
-  // OPRAVA: Když je Vision vpředu (cos ≈ 1), nastavit scale přesně na 1.0
   const visionScale = useTransform(vCos, (c) => {
     if (c > 0.9) return 1.0; // Aktivní karta = přesně 1.0
     return BASE_SCALE + DEPTH_SCALE * (c * 0.999);
   });
-  const visionOpacity = useTransform(vCos, (c) => 0.25 + 0.75 * ((c + 1) / 2)); // 0.25-1.0 místo 0.55-1.0
+  const visionOpacity = useTransform(vCos, (c) => 0.1 + 0.9 * ((c + 1) / 2));
   const visionRotateY = useTransform(vSin, (s) => `${-s * MAX_TILT}deg`);
-  
-  // DOČASNĚ: Úplně odstranit blur pro debugging
-  const visionBlurPx = useMotionValue(0);
 
+  // Blur – můžeš vrátit BACK_BLUR/FRONT_BLUR kdykoliv
+  const missionBlurPx = useMotionValue(0);
+  const visionBlurPx = useMotionValue(0);
   const missionFilter = useTransform(missionBlurPx, (b) => `blur(${b}px)`);
   const visionFilter = useTransform(visionBlurPx, (b) => `blur(${b}px)`);
 
-  // --- Carousel ovládání ---------------------------------------------------
+  // --- Ovládání -------------------------------------------------------------
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const dragStartX = useRef(0);
-  const dragStartProgress = useRef(0);
 
   const snapTo = (target: 0 | 1) => {
     setIndex(target);
-    progress.set(target); // spring hladce doběhne
+    progress.set(target);
   };
 
   const next = () => snapTo(1);
   const prev = () => snapTo(0);
 
-  const onDragStart = (_evt: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    dragStartX.current = info.point.x;
-    dragStartProgress.current = smooth.get();
-  };
-
-  const onDrag = (_evt: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const el = containerRef.current;
-    if (!el) return;
-    const width = Math.max(el.clientWidth, 1);
-    const deltaX = info.point.x - dragStartX.current;
-
-    // Převod posunu na změnu progressu (levý tah -> +, pravý tah -> -)
-    const deltaProgress = -deltaX / width; // cca 1× šířka = 1.0 progress
-    const nextVal = clamp(dragStartProgress.current + deltaProgress, 0, 1);
-    progress.set(nextVal);
-  };
-
-  const onDragEnd = () => {
-    const v = smooth.get();
-    const target: 0 | 1 = v < 0.5 ? 0 : 1; // jednoduchý threshold
-    snapTo(target);
-  };
+  // Tap-to-switch (klepnutí kamkoliv přepne)
+  const tapToggle = () => snapTo(index === 0 ? 1 : 0);
 
   const canPrev = index === 1;
   const canNext = index === 0;
@@ -121,16 +93,14 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
         className="relative flex items-center justify-center"
         style={{ height: '100svh', perspective: 1000, WebkitPerspective: 1000 }}
       >
-        {/* Drag overlay (celoplošný) */}
-        <motion.div
-          className="absolute inset-0"
-          drag="x"
-          dragElastic={0}
-          dragMomentum={false}
-          onDragStart={onDragStart}
-          onDrag={onDrag}
-          onDragEnd={onDragEnd}
-          style={{ pointerEvents: 'auto', zIndex: 5, touchAction: 'pan-y' }}
+        {/* TAP overlay – klepnutí kamkoliv přepne kartu */}
+        <motion.button
+          type="button"
+          aria-label="Toggle card"
+          className="absolute inset-0 z-10"
+          onPointerDown={(e) => { e.preventDefault(); }} // potlačí nativní pan
+          onClick={tapToggle}
+          style={{ touchAction: 'none', background: 'transparent' }}
         />
 
         {/* Vision */}
@@ -149,7 +119,7 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
           <Card title={t('about.vision.title')} text={t('about.vision.content')} />
         </motion.div>
 
-        {/* Mission - OPRAVENO: scale = 1.0 když je vpředu */}
+        {/* Mission */}
         <motion.div
           style={{
             x: missionX,
@@ -172,9 +142,7 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
             onClick={canPrev ? prev : undefined}
             aria-label="Previous"
             disabled={!canPrev}
-            className={`text-2xl select-none transition ${
-              canPrev ? 'opacity-100' : 'opacity-20 pointer-events-none'
-            }`}
+            className={`text-2xl select-none transition ${canPrev ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}
           >
             ←
           </button>
@@ -190,9 +158,7 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
             onClick={canNext ? next : undefined}
             aria-label="Next"
             disabled={!canNext}
-            className={`text-2xl select-none transition ${
-              canNext ? 'opacity-100' : 'opacity-20 pointer-events-none'
-            }`}
+            className={`text-2xl select-none transition ${canNext ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}
           >
             →
           </button>
@@ -216,24 +182,23 @@ const Dot: React.FC<{ active: boolean; onClick: () => void }> = ({ active, onCli
   />
 );
 
-// 📱 Tablet-friendly typografie (iPad Air apod.) přes clamp
+// 📱 Typografie přes clamp (mob → tablet), desktop se na mobilní variantě neren­deruje
 const Card: React.FC<{ title: string; text: string }> = ({ title, text }) => (
   <div className="mx-auto max-w-md will-change-transform">
     <h3
       className="
         font-bold text-[#FFED29] mb-4 text-center
-        text-[clamp(2rem,6.8vw,2.9rem)]  /* mob → tablet */
-        lg:text-4xl                         /* desktop: nerelevantní, ale bezpečné */
+        text-[clamp(2rem,6.8vw,2.9rem)]
+        lg:text-4xl
       "
     >
       {title}
     </h3>
-    {/* DOČASNĚ: Odstraněno backdrop-blur-lg pro debugging */}
     <div className="relative bg-white/5 rounded-3xl p-5 border border-white/10">
       <p
         className="
           leading-relaxed whitespace-pre-line
-          text-[clamp(1rem,3.8vw,1.4rem)]  /* mob → tablet čitelnější */
+          text-[clamp(1rem,3.8vw,1.4rem)]
           lg:text-lg
         "
       >
