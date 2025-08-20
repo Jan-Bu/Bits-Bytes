@@ -130,7 +130,7 @@ const MobileMissionVision: React.FC<Props> = ({ t, className = '' }) => {
           onDragStart={onDragStart}
           onDrag={onDrag}
           onDragEnd={onDragEnd}
-          style={{ pointerEvents: 'auto', zIndex: 5 }}
+          style={{ pointerEvents: 'auto', zIndex: 5, touchAction: 'pan-y' }}
         />
 
         {/* Vision */}
