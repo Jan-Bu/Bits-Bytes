@@ -179,6 +179,18 @@ interface AboutSectionProps {
 }
 
 const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
+  useEffect(() => {
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    const prev = meta.content;
+    meta.content = '#000000';     // About = černá
+    return () => { meta!.content = prev || '#ffffff'; };
+  }, []);
+  
   const [visibleSections, setVisibleSections] = useState(new Set<string>());
   const [anvilHintVisible, setAnvilHintVisible] = useState(true);
   const navigate = useNavigate();
