@@ -73,7 +73,7 @@ const FloatingMenu: React.FC<{
   return (
     <div
       ref={boxRef}
-      className="fixed z-[60] top-3 right-3 md:top-5 md:right-5"
+      className="fixed z-[60] top-12 right-5 md:top-5 md:right-5"
       aria-live="polite"
     >
       <div className="relative">
@@ -190,7 +190,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     meta.content = '#000000';     // About = černá
     return () => { meta!.content = prev || '#ffffff'; };
   }, []);
-  
+
   const [visibleSections, setVisibleSections] = useState(new Set<string>());
   const [anvilHintVisible, setAnvilHintVisible] = useState(true);
   const navigate = useNavigate();
