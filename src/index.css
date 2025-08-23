@@ -17,3 +17,5 @@ html, body {
 body {
   font-family: 'Jersey 25', sans-serif;
 }
+
+canvas { background: #000; display: block; }
