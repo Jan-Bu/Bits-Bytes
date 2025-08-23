@@ -13,7 +13,7 @@ export const PhaserGame: React.FC<{ onNavigate?: (path: string) => void }> = ({ 
     // ✅ základní plátno hry podle orientace (bez zbytečných vrstev navíc)
     const isTall = window.innerHeight > window.innerWidth;
     const BASE = isTall
-      ? { w: 1008, h: 1440 } // tvoje portrait scéna
+      ? { w: 960, h: 1440 } // tvoje portrait scéna
       : { w: 2560, h: 1440 }; // tvoje landscape scéna
 
     const config: Phaser.Types.Core.GameConfig = {
