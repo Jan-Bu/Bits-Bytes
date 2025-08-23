@@ -7,38 +7,28 @@ type MenuSection =
 
 const BASE_W = 2560;
 const BASE_H = 1440;
-const DISK_PX = 200; // cílová šířka v px (např. zdroj 400px => scale 0.5)
+const DISK_PX = 200;
 
 export class MainScene extends Phaser.Scene {
   constructor() { super('MainScene'); }
 
   private bg!: Phaser.GameObjects.Image;
-  private worldUnderlay!: Phaser.GameObjects.Rectangle;        // 🔳 černé pozadí pod světem
-
   private disks: Partial<Record<MenuSection, Phaser.GameObjects.Image>> = {};
-  private baseY: Partial<Record<MenuSection, number>> = {};    // uložíme si „původní Y“
-
+  private baseY: Partial<Record<MenuSection, number>> = {};
   private led!: Phaser.GameObjects.Rectangle;
   private screenOverlay!: Phaser.GameObjects.Rectangle;
   private screenText!: Phaser.GameObjects.Text;
   private slot!: { x: number; y: number };
-
   private isBusy = false;
 
-  // 📱 overlay pro otočení zařízení (pixel-art rotate.png)
-  private rotateOverlay!: Phaser.GameObjects.Container;
-  private rotateShade!: Phaser.GameObjects.Rectangle;           // černé (neprůhledné) pozadí overlaye
-  private rotateIcon!: Phaser.GameObjects.Image;                // tvoje /ui/rotate.png
-  private isHandheld = false;
-
   preload() {
-    // ⬇️ Rozhodnutí podle poměru stran v okamžiku načítání hry
-    const { width, height } = this.scale.gameSize;
-    const isWidescreen = width >= height;
-    const mapFile = isWidescreen ? '/scene_land.json' : '/scene_land_height.json';
+    // Výběr mapy + pozadí podle orientace viewportu
+    const isTall = window.innerHeight > window.innerWidth;
+    const mapFile = isTall ? '/scene_land_height.json' : '/scene_land.json';
+    const bgFile = isTall ? '/background_height.png' : '/background_main.png';
 
     this.load.tilemapTiledJSON('map', mapFile);
-    this.load.image('bg', '/background_main.png');
+    this.load.image('bg', bgFile);
 
     this.load.image('disk_about', '/disk_about.png');
     this.load.image('disk_services', '/disk_services.png');
@@ -48,46 +38,57 @@ export class MainScene extends Phaser.Scene {
     this.load.image('disk_terms', '/disk_terms.png');
     this.load.image('disk_gdpr', '/disk_gdpr.png');
     this.load.image('disk_home', '/disk_home.png');
-
-    // 🔔 tvoje pixel-art ikona
-    this.load.image('rotate_hint', '/rotate.png');
   }
 
   create() {
     // ostré textury
-    this.textures.getTextureKeys().forEach(k => this.textures.get(k)?.setFilter(Phaser.Textures.FilterMode.NEAREST));
+    this.textures.getTextureKeys().forEach(k =>
+      this.textures.get(k)?.setFilter(Phaser.Textures.FilterMode.NEAREST)
+    );
 
-    // 🔳 Černý podklad za normálním backgroundem (uvnitř herního světa)
-    this.worldUnderlay = this.add
-      .rectangle(0, 0, BASE_W, BASE_H, 0x000000, 1)
-      .setOrigin(0)
-      .setDepth(-1000); // úplně vzadu
-
-    // pozadí + kamera
-    this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
-    this.cameras.main.setBounds(0, 0, BASE_W, BASE_H);
-    this.cameras.main.setRoundPixels(true);
-
-    // načíst Tiled + entities
+    // načteme mapu jen kvůli entitám
     const map = this.make.tilemap({ key: 'map' });
     const ents = this.readEntities(map, 'entities');
+
+    // 👉 svět nastavíme podle skutečné velikosti BG textury (žádné BASE_W/H)
+    const bgImg = this.textures.get('bg').getSourceImage() as HTMLImageElement;
+    const worldW = (bgImg as any).naturalWidth || bgImg.width;
+    const worldH = (bgImg as any).naturalHeight || bgImg.height;
+
+    // kamera podle pozadí
+    this.cameras.main.setBounds(0, 0, worldW, worldH);
+    this.cameras.main.setRoundPixels(true);
+
+    // pozadí 1:1 (bez deformace)
+    this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
+    this.bg.setDisplaySize(worldW, worldH);
 
     // LED + overlay
     this.led = this.add.rectangle(ents.led.x, ents.led.y, 8, 8, 0xff2e2e).setVisible(false);
 
     const cx = ents.screen.x + ents.screen.w / 2;
     const cy = ents.screen.y + ents.screen.h / 2;
+
     this.screenOverlay = this.add.rectangle(cx, cy, ents.screen.w, ents.screen.h, 0xffffff, 0.18)
       .setBlendMode(Phaser.BlendModes.SCREEN)
       .setVisible(false);
+
+    // 📐 spočítáme font size relativně k velikosti „obrazovky“
+    const base = Math.min(ents.screen.w, ents.screen.h);
+    const fontSize = Math.round(base * 0.12);
+
+    // 🔍 zvýšíme rozlišení podle pixel ratio (ať není rozmazané)
+    const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+
     this.screenText = this.add.text(cx, cy, 'LOADING…', {
       fontFamily: 'monospace',
-      fontSize: `${Math.round(Math.min(ents.screen.w, ents.screen.h) * 0.12)}px`,
+      fontSize: `${fontSize}px`,
       color: '#9effa6',
       align: 'center',
+      resolution: dpr,   // ✅ ostrý text na mobilech
     }).setOrigin(0.5).setVisible(false);
-
-    // diskety
+    
+    // DISKETY
     (Object.keys(ents.disks) as MenuSection[]).forEach((name) => {
       const p = ents.disks[name]!;
       const key = `disk_${name}`;
@@ -97,20 +98,19 @@ export class MainScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
       const tex = this.textures.get(key).getSourceImage() as HTMLImageElement;
-      const scale = DISK_PX / tex.width; // např. 400 -> 200 => 0.5
+      const scale = DISK_PX / tex.width;
       img.setScale(scale);
 
-      // uložíme „původní Y“
       this.baseY[name] = img.y;
 
-      // HOVER: drž pozici výš po dobu hoveru (žádné yoyo, žádné světlo)
+      // Hover: jen zvednout, držet, vrátit
       img.on('pointerover', () => {
         this.tweens.killTweensOf(img);
         this.tweens.add({
           targets: img,
           y: Math.round((this.baseY[name] ?? img.y) - 8),
           duration: 140,
-          ease: 'Quad.easeOut'
+          ease: 'Quad.easeOut',
         });
       });
 
@@ -120,13 +120,13 @@ export class MainScene extends Phaser.Scene {
           targets: img,
           y: Math.round(this.baseY[name] ?? img.y),
           duration: 160,
-          ease: 'Quad.easeIn'
+          ease: 'Quad.easeIn',
         });
       });
 
       img.on('pointerup', () => this.insertDisk(name));
 
-      // Aktivní HOME: jemný pulz (ostatní bez světla)
+      // Jemný pulz jen pro HOME (pokud jsou k dispozici postFX)
       if (name === 'home' && (img as any).postFX) {
         const fx = (img as any).postFX.addGlow(0x7df9ff, 4, 0, false);
         this.tweens.add({
@@ -135,7 +135,7 @@ export class MainScene extends Phaser.Scene {
           duration: 1500,
           yoyo: true,
           repeat: -1,
-          ease: 'Sine.easeInOut'
+          ease: 'Sine.easeInOut',
         });
       }
 
@@ -143,21 +143,6 @@ export class MainScene extends Phaser.Scene {
     });
 
     this.slot = ents.slot;
-
-    // 📱 Overlay pro otočení – jen pro handheld zařízení
-    this.isHandheld = !this.sys.game.device.os.desktop;
-    this.createRotateHint();
-    this.updateRotateHint();
-
-    // reaguj na otočení/resize
-    this.scale.on(Phaser.Scale.Events.ORIENTATION_CHANGE, this.updateRotateHint, this);
-    this.scale.on(Phaser.Scale.Events.RESIZE, this.updateRotateHint, this);
-
-    // úklid listenerů při ukončení scény
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.scale.off(Phaser.Scale.Events.ORIENTATION_CHANGE, this.updateRotateHint, this);
-      this.scale.off(Phaser.Scale.Events.RESIZE, this.updateRotateHint, this);
-    });
   }
 
   // ===== helpers =====
@@ -207,50 +192,7 @@ export class MainScene extends Phaser.Scene {
   }
   private wait(ms: number) { return new Promise<void>((r) => this.time.delayedCall(ms, r)); }
 
-  // ===== overlay s rotate ikonou =====
-  private createRotateHint() {
-    const w = this.scale.width;
-    const h = this.scale.height;
-
-    this.rotateOverlay = this.add.container(0, 0)
-      .setDepth(10_000)
-      .setScrollFactor(0)
-      .setVisible(false);
-
-    // 🔳 černé NEPRŮHLEDNÉ pozadí, blokuje kliky
-    this.rotateShade = this.add.rectangle(0, 0, w, h, 0x000000, 1)
-      .setOrigin(0)
-      .setInteractive();
-    this.rotateOverlay.add(this.rotateShade);
-
-    // ikona (pixel-art)
-    this.textures.get('rotate_hint')?.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.rotateIcon = this.add.image(w / 2, h / 2, 'rotate_hint').setOrigin(0.5);
-    this.rotateOverlay.add(this.rotateIcon);
-  }
-
-  private updateRotateHint = () => {
-    const w = this.scale.width;
-    const h = this.scale.height;
-
-    this.rotateShade.setSize(w, h);
-
-    const src = this.textures.get('rotate_hint').getSourceImage() as HTMLImageElement;
-    const target = Math.min(w, h) * 0.28;
-    const floatScale = target / src.width;
-    const intScale = Math.max(1, Math.floor(floatScale));
-    this.rotateIcon.setScale(intScale).setPosition(Math.round(w / 2), Math.round(h / 2));
-
-    // ⬇️ PŮVODNĚ (vyhoď)
-    // const isPortrait = this.scale.orientation === Phaser.Scale.PORTRAIT || w < h;
-
-    // ✅ NEJJEDNODUŠŠÍ A SPOLEHLIVÉ
-    const isPortrait = h > w;
-
-    this.rotateOverlay.setVisible(this.isHandheld && isPortrait);
-  };
-
-  // ===== vkládání diskety + navigace =====
+  // vkládání diskety + navigace
   private async insertDisk(section: MenuSection) {
     if (this.isBusy) return;
     this.isBusy = true;
@@ -260,7 +202,6 @@ export class MainScene extends Phaser.Scene {
 
     // zneaktivni a skryj zdroj, ať nejde klikat opakovaně
     src.disableInteractive();
-    const originalAlpha = src.alpha;
     src.setAlpha(0.001);
 
     // klon pro let
@@ -281,9 +222,6 @@ export class MainScene extends Phaser.Scene {
 
     // emit pro React wrapper
     this.game.events.emit('navigate', section);
-
-    // (pokud bys na scéně zůstal, vrátíš interakci a alpha zpět:)
-    // src.setAlpha(originalAlpha).setInteractive();
 
     this.isBusy = false;
   }
