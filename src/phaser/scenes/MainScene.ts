@@ -50,7 +50,7 @@ export class MainScene extends Phaser.Scene {
     this.load.image('disk_home', '/disk_home.png');
 
     // 🔔 tvoje pixel-art ikona
-    this.load.image('rotate_hint', '/ui/rotate.png');
+    this.load.image('rotate_hint', '/rotate.png');
   }
 
   create() {
