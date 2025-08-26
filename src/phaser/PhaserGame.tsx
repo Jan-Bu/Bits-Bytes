@@ -3,6 +3,18 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { MainScene } from './scenes/MainScene';
 
+// Centrální mapování sekcí → URL (home vede na '/')
+const ROUTES: Record<string, string> = {
+  home: '/',
+  about: '/about',
+  services: '/services',
+  pricing: '/pricing',
+  blog: '/blog',
+  contact: '/contact',
+  terms: '/terms',
+  gdpr: '/gdpr',
+};
+
 export const PhaserGame: React.FC<{ onNavigate?: (path: string) => void }> = ({ onNavigate }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -10,11 +22,8 @@ export const PhaserGame: React.FC<{ onNavigate?: (path: string) => void }> = ({ 
   useEffect(() => {
     if (!hostRef.current) return;
 
-    // ✅ základní plátno hry podle orientace (bez zbytečných vrstev navíc)
     const isTall = window.innerHeight > window.innerWidth;
-    const BASE = isTall
-      ? { w: 960, h: 1540 } // tvoje portrait scéna
-      : { w: 2560, h: 1440 }; // tvoje landscape scéna
+    const BASE = isTall ? { w: 960, h: 1540 } : { w: 2560, h: 1440 };
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
@@ -23,7 +32,7 @@ export const PhaserGame: React.FC<{ onNavigate?: (path: string) => void }> = ({ 
       height: BASE.h,
       backgroundColor: '#000',
       scale: {
-        mode: Phaser.Scale.FIT,         // vyplní viewport bez deformace
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
       render: {
@@ -38,7 +47,12 @@ export const PhaserGame: React.FC<{ onNavigate?: (path: string) => void }> = ({ 
     const game = new Phaser.Game(config);
     gameRef.current = game;
 
-    const onNav = (section: string) => onNavigate?.('/' + section);
+    // Handler navigace: mapuje sekci na URL a nenaviguje, pokud už jsme na cíli
+    const onNav = (section: string) => {
+      const path = ROUTES[section] ?? '/';
+      if (window.location.pathname !== path) onNavigate?.(path);
+    };
+
     game.events.on('navigate', onNav);
 
     return () => {
