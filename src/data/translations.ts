@@ -96,8 +96,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
         back: 'TO HOME PAGE',
         contact: 'CONTACT US'
       }
-    }
-    ,
+    },
     services: {
       title: 'Our Services',
       web: {
