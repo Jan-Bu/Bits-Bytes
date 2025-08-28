@@ -93,9 +93,9 @@ const PricingSection: React.FC<PricingSectionProps> = ({ t }) => {
   const text = t("pricing.text");
 
   const highlighted = useMemo(
-    () => highlightWords(text, ["websites", "website"], "text-[var(--theme-color)]"),
-    [text, themeColor]
-  );
+  () => highlightWords(text, ["unique", "custom"], "text-[var(--theme-color)]"),
+  [text, themeColor]
+);
 
   return (
     <section
