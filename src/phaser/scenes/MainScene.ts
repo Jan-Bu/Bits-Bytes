@@ -18,11 +18,12 @@ export class MainScene extends Phaser.Scene {
   private led!: Phaser.GameObjects.Rectangle;
   private screenOverlay!: Phaser.GameObjects.Rectangle;
   private screenText!: Phaser.GameObjects.Text;
+  private screenTextTitle!: Phaser.GameObjects.Text;  // WEBDESIGN
+  private screenTextHint!: Phaser.GameObjects.Text;   // INSERT DISK
   private slot!: { x: number; y: number };
   private isBusy = false;
 
   preload() {
-    // Výběr mapy + pozadí podle orientace viewportu
     const isTall = window.innerHeight > window.innerWidth;
     const mapFile = isTall ? '/scene_land_height.json' : '/scene_land.json';
     const bgFile = isTall ? '/background_height.png' : '/background_main.png';
@@ -41,29 +42,23 @@ export class MainScene extends Phaser.Scene {
   }
 
   create() {
-    // ostré textury
     this.textures.getTextureKeys().forEach(k =>
       this.textures.get(k)?.setFilter(Phaser.Textures.FilterMode.NEAREST)
     );
 
-    // načteme mapu jen kvůli entitám
     const map = this.make.tilemap({ key: 'map' });
     const ents = this.readEntities(map, 'entities');
 
-    // 👉 svět nastavíme podle skutečné velikosti BG textury (žádné BASE_W/H)
     const bgImg = this.textures.get('bg').getSourceImage() as HTMLImageElement;
     const worldW = (bgImg as any).naturalWidth || bgImg.width;
     const worldH = (bgImg as any).naturalHeight || bgImg.height;
 
-    // kamera podle pozadí
     this.cameras.main.setBounds(0, 0, worldW, worldH);
     this.cameras.main.setRoundPixels(true);
 
-    // pozadí 1:1 (bez deformace)
     this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
     this.bg.setDisplaySize(worldW, worldH);
 
-    // LED + overlay
     this.led = this.add.rectangle(ents.led.x, ents.led.y, 8, 8, 0xff2e2e).setVisible(false);
 
     const cx = ents.screen.x + ents.screen.w / 2;
@@ -73,22 +68,52 @@ export class MainScene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.SCREEN)
       .setVisible(false);
 
-    // 📐 spočítáme font size relativně k velikosti „obrazovky“
     const base = Math.min(ents.screen.w, ents.screen.h);
-    const fontSize = Math.round(base * 0.12);
-
-    // 🔍 zvýšíme rozlišení podle pixel ratio (ať není rozmazané)
+    const fontSize = Math.round(base * 0.18);
     const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
 
+    // LOADING text (schovaný dokud se neklikne na disketu)
     this.screenText = this.add.text(cx, cy, 'LOADING…', {
       fontFamily: 'monospace',
       fontSize: `${fontSize}px`,
       color: '#9effa6',
       align: 'center',
-      resolution: dpr,   // ✅ ostrý text na mobilech
+      resolution: dpr,
     }).setOrigin(0.5).setVisible(false);
-    
-    // DISKETY
+
+    // --- nové perma texty ---
+    const titleSize = Math.round(base * 0.18); // větší font než LOADING
+    const hintSize = Math.round(base * 0.14);
+
+    const titleY = ents.screen.y + ents.screen.h * 0.35;
+    const hintY = ents.screen.y + ents.screen.h * 0.65;
+
+    this.screenTextTitle = this.add.text(cx, titleY, 'WEBDESIGN', {
+      fontFamily: 'jersey25, monospace',
+      fontSize: `${titleSize}px`,
+      color: '#9effa6',
+      align: 'center',
+      resolution: dpr,
+    }).setOrigin(0.5).setVisible(true);
+
+    this.screenTextHint = this.add.text(cx, hintY, 'INSERT DISK', {
+      fontFamily: 'jersey25, monospace',
+      fontSize: `${hintSize}px`,
+      color: '#9effa6',
+      align: 'center',
+      resolution: 3,
+    }).setOrigin(0.5).setVisible(true);
+
+    this.tweens.add({
+      targets: this.screenTextHint,
+      alpha: { from: 1, to: 0.3 },
+      duration: 700,              
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // disky
     (Object.keys(ents.disks) as MenuSection[]).forEach((name) => {
       const p = ents.disks[name]!;
       const key = `disk_${name}`;
@@ -103,7 +128,6 @@ export class MainScene extends Phaser.Scene {
 
       this.baseY[name] = img.y;
 
-      // Hover: jen zvednout, držet, vrátit
       img.on('pointerover', () => {
         this.tweens.killTweensOf(img);
         this.tweens.add({
@@ -126,7 +150,6 @@ export class MainScene extends Phaser.Scene {
 
       img.on('pointerup', () => this.insertDisk(name));
 
-      // Jemný pulz jen pro HOME (pokud jsou k dispozici postFX)
       if (name === 'home' && (img as any).postFX) {
         const fx = (img as any).postFX.addGlow(0x7df9ff, 4, 0, false);
         this.tweens.add({
@@ -145,7 +168,6 @@ export class MainScene extends Phaser.Scene {
     this.slot = ents.slot;
   }
 
-  // ===== helpers =====
   private centerOf(obj: any) {
     if (!obj.width && !obj.height) return { x: Math.round(obj.x), y: Math.round(obj.y) };
     return {
@@ -192,7 +214,6 @@ export class MainScene extends Phaser.Scene {
   }
   private wait(ms: number) { return new Promise<void>((r) => this.time.delayedCall(ms, r)); }
 
-  // vkládání diskety + navigace
   private async insertDisk(section: MenuSection) {
     if (this.isBusy) return;
     this.isBusy = true;
@@ -200,11 +221,9 @@ export class MainScene extends Phaser.Scene {
     const src = this.disks[section]!;
     if (!src) { this.isBusy = false; return; }
 
-    // zneaktivni a skryj zdroj, ať nejde klikat opakovaně
     src.disableInteractive();
     src.setAlpha(0.001);
 
-    // klon pro let
     const flying = this.add.image(Math.round(src.x), Math.round(src.y), src.texture.key)
       .setOrigin(0.5)
       .setDepth(1000)
@@ -212,17 +231,21 @@ export class MainScene extends Phaser.Scene {
 
     await this.tween({ targets: flying, x: this.slot.x, y: this.slot.y, duration: 700, ease: 'Cubic.easeInOut' });
 
-    // LED + overlay
+    // skryj perma texty, ukaž LOADING
+    this.screenTextTitle.setVisible(false);
+    this.screenTextHint.setVisible(false);
+
     this.led.setVisible(true); await this.wait(220); this.led.setVisible(false);
-    this.screenOverlay.setVisible(true); this.screenText.setVisible(true);
+    this.screenOverlay.setVisible(true);
+    this.screenText.setVisible(true);
+
     await this.wait(900);
 
     flying.destroy();
-    this.screenOverlay.setVisible(false); this.screenText.setVisible(false);
+    this.screenOverlay.setVisible(false);
+    this.screenText.setVisible(false);
 
-    // emit pro React wrapper
     this.game.events.emit('navigate', section);
-
     this.isBusy = false;
   }
 }

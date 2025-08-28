@@ -8,7 +8,6 @@ import BlogSection from './components/pages/BlogSection';
 import ContactSection from './components/pages/ContactSection';
 import TermsSection from './components/pages/TermsSection';
 import GDPRSection from './components/pages/GDPRSection';
-import '@google/model-viewer';
 
 import { useTranslation } from './hooks/useTranslation';
 
