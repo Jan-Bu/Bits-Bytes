@@ -93,9 +93,9 @@ const PricingSection: React.FC<PricingSectionProps> = ({ t }) => {
   const text = t("pricing.text");
 
   const highlighted = useMemo(
-  () => highlightWords(text, ["unique", "custom"], "text-[var(--theme-color)]"),
-  [text, themeColor]
-);
+    () => highlightWords(text, ["unique", "custom"], "text-[var(--theme-color)]"),
+    [text, themeColor]
+  );
 
   return (
     <section
@@ -172,7 +172,9 @@ const PricingSection: React.FC<PricingSectionProps> = ({ t }) => {
             </div>
 
             {/* Paleta barev */}
-            <div className="absolute top-1/2 -translate-y-1/2 left-[4px] sm:left-[8px] md:left-[12px] z-50">
+            <div
+              className="absolute top-1/4 sm:top-1/2 translate-y-0 sm:-translate-y-1/2 left-[4px] sm:left-[8px] md:left-[12px] z-50">
+
               <div
                 className="flex flex-col gap-[3px] sm:gap-[4px] border border-black px-[3px] py-[2px] sm:px-[4px] sm:py-[3px] bg-[#bdbdbd]"
                 style={{ boxShadow: "inset 1px 1px #FFFFFF, inset -1px -1px #7B7B7B" }}
