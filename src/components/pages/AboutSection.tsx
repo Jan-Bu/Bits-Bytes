@@ -85,11 +85,11 @@ const FloatingMenu: React.FC<{
           whileTap={{ scale: 0.96 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 420, damping: 28 } as const}
-          className="h-12 w-12 md:h-14 md:w-14 
+          className="h-12 w-12 md:h-20 md:w-20 
              grid place-items-center relative overflow-hidden
              bg-transparent border-0 shadow-none"
         >
-          <div className="relative h-6 w-6">
+          <div className="relative h-8 w-8 md:h-10 md:w-10">
             <AnimatePresence mode="sync" initial={false}>
               {!open && (
                 <motion.div
@@ -100,7 +100,7 @@ const FloatingMenu: React.FC<{
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                 >
-                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
                     <path
                       d="M4 6h16M4 12h16M4 18h16"
                       stroke="#FFED29"
@@ -119,7 +119,7 @@ const FloatingMenu: React.FC<{
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                 >
-                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
                     <path
                       d="M18 6L6 18M6 6l12 12"
                       stroke="#FFED29"

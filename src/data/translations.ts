@@ -9,8 +9,9 @@ export const translations: Translations = {
       pricing: 'Pricing',
       blog: 'Blog',
       contact: 'Contact',
-      terms: 'Terms & Conditions',
-      gdpr: 'GDPR'
+      terms: 'Terms',
+      gdpr: 'GDPR',
+      home: 'Home'
     },
     hero: {
       headline: 'We build websites and branding that stand out.',
