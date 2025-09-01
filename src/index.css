@@ -10,7 +10,8 @@
   font-display: block;
 }
 
-html, body {
+html,
+body {
   overflow-x: hidden;
 }
 
@@ -18,4 +19,25 @@ body {
   font-family: 'Jersey 25', sans-serif;
 }
 
-canvas { background: #000; display: block; }
+canvas {
+  background: #000;
+  display: block;
+}
+
+@layer utilities {
+  .bb-caret {
+    /* jen Tailwind, co jde */
+    @apply inline-block w-[3px] h-[1em] ml-[6px] bg-current animate-caret-blink;
+
+    /* tohle dej jako klasické CSS – @apply tu selhává */
+    vertical-align: -0.15em;
+  }
+
+  .bb-caret-abs {
+    @apply absolute top-0 w-[3px] h-[1em] bg-current animate-caret-blink;
+  }
+
+  .bb-caret-center {
+    @apply absolute left-1/2 -translate-x-1/2 top-0 w-[3px] h-[1em] bg-current animate-caret-blink;
+  }
+}

@@ -90,8 +90,8 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       },
       team: {
         title: 'Our Team',
-        "bits": "Bits – Design, frontend",
-        "bytes": "Bytes – Communication, backend"
+        bits: 'Bits – Design, frontend',
+        bytes: 'Bytes – Communication, backend'
       },
       button: {
         back: 'TO HOME PAGE',
@@ -106,7 +106,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       },
       branding: {
         title: 'Brand Identity',
-        description: 'Unique visual identities that capture your brand\'s essence and personality.'
+        description: "Unique visual identities that capture your brand's essence and personality."
       },
       design: {
         title: 'UI/UX Design',
@@ -115,9 +115,10 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
     },
     pricing: {
       intro: {
-        title: "Pricing.txt",
+        title: 'Pricing.txt'
       },
-      text: 'At our studio, you won’t find standard packages or fixed prices. Every project is unique and deserves an individual approach.\n\n We design websites, graphics, branding, and print materials fully tailored to your needs. Whether you’re looking for a simple website, a complete brand identity, or custom print solutions, we make sure everything fits your vision.\n\n Before we start, we always agree on the details, so you know exactly what to expect, with no unpleasant surprises.'
+      text:
+        "At our studio, you won’t find standard packages or fixed prices. Every project is unique and deserves an individual approach.\n\n We design websites, graphics, branding, and print materials fully tailored to your needs. Whether you’re looking for a simple website, a complete brand identity, or custom print solutions, we make sure everything fits your vision.\n\n Before we start, we always agree on the details, so you know exactly what to expect, with no unpleasant surprises."
     },
     blog: {
       title: 'Latest Blog Posts',
@@ -143,15 +144,17 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       email: 'Email',
       message: 'Message',
       send: 'Send Message',
-      info: 'Ready to start your project? Drop us a line and let\'s create something amazing together.'
+      info: "Ready to start your project? Drop us a line and let's create something amazing together."
     },
     terms: {
       title: 'Terms & Conditions',
-      content: 'These terms and conditions outline the rules and regulations for the use of Bits&Bytes services. By accessing and using our services, you accept these terms and conditions in full...'
+      content:
+        'These terms and conditions outline the rules and regulations for the use of Bits&Bytes services. By accessing and using our services, you accept these terms and conditions in full...'
     },
     gdpr: {
       title: 'GDPR & Privacy Policy',
-      content: 'We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data and your privacy rights...'
+      content:
+        'We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data and your privacy rights...'
     },
     cookies: {
       title: 'Cookie Preferences',
@@ -163,8 +166,90 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       analytics: 'Analytics Cookies',
       marketing: 'Marketing Cookies',
       save: 'Save Preferences'
+    },
+
+    /* --- Services Page content (arrays -> objects) --- */
+    ServicesSection: {
+      hero: {
+        title: 'Services.txt',
+        headline: 'Webs that work. Brands that stick.',
+        sub: 'From concept to code and all the print you need.'
+      },
+      menu: {
+        web: 'Web Development',
+        seo: 'SEO',
+        branding: 'Brand Identity',
+        print: 'Print & Production'
+      },
+      web: {
+        title: 'Web Development',
+        lead:
+          'Custom websites with clean code, fast load, and a design that fits your brand — not the other way around.',
+        bullets: {
+          i1: 'React/TypeScript front-ends with pixel-perfect details',
+          i2: 'Responsive by default, accessible by design',
+          i3: 'Performance first: image strategy, lazy-loading, code-splitting',
+          i4: "CMS or headless hookup when you need it, not when you don't"
+        },
+        showcaseTitle: 'Selected Work',
+        showcase: {
+          s1: {
+            title: 'Pragoline.cz',
+            note: 'Product detail driven SEO + dynamic OG, Cloudinary images',
+            href: '/projects/pragoline'
+          },
+          s2: {
+            title: 'Cotton Candy Cakes',
+            note: 'Sweet brand site with ultra-simple admin',
+            href: '/projects/cotton-candy'
+          },
+          s3: {
+            title: 'Hawks Security',
+            note: 'Clean B2B landing with lead capture',
+            href: '/projects/hawks'
+          }
+        },
+        cta: 'Need a website that actually converts? Let’s talk.'
+      },
+      seo: {
+        title: 'SEO',
+        lead:
+          'Real-world SEO without buzzwords — technical health, content that makes sense, and pages that get found.',
+        bullets: {
+          i1: 'Technical SEO: structure, meta, schema, sitemap, Core Web Vitals',
+          i2: 'On-page: content hierarchy, internal links, intent-driven copy',
+          i3: 'Performance: lighthouse-friendly build, caching & CDN',
+          i4: 'Analytics: privacy-minded tracking and clear reporting'
+        },
+        cta: 'We’ll find quick wins and plan the long game.'
+      },
+      branding: {
+        title: 'Brand Identity',
+        lead:
+          'From logo and colors to full brand manual. One look. One voice. Everywhere.',
+        bullets: {
+          i1: 'Logo systems (primary/secondary/mark)',
+          i2: 'Color & type scales that survive the real world',
+          i3: 'UI kits for web & socials',
+          i4: 'Brand guide you’ll actually use'
+        },
+        cta: 'Start with a mini-identity or go full brand manual.'
+      },
+      print: {
+        title: 'Print & Production',
+        lead:
+          'Design and printing under one roof — from business cards to banners and packaging.',
+        bullets: {
+          i1: 'Business cards, flyers, stickers, posters, roll-ups',
+          i2: 'Catalogs, brochures, booklets',
+          i3: 'Packaging mockups and production files',
+          i4: 'Large-format & outdoor ads'
+        },
+        cta: 'Send specs or just the goal — we’ll prep, print, and deliver.'
+      }
     }
   },
+
   cs: {
     nav: {
       about: 'O nás',
@@ -173,7 +258,8 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       blog: 'Blog',
       contact: 'Kontakt',
       terms: 'Obchodní podmínky',
-      gdpr: 'GDPR'
+      gdpr: 'GDPR',
+      home: 'Domů'
     },
     hero: {
       headline: 'Vytváříme webové stránky a branding, které vynikají.',
@@ -220,7 +306,9 @@ Od loga po tisk – vše pod jednou střechou, s rozumem i stylem.
 
 Žádné nekonečné předávání mezi grafikem, vývojářem a tiskařem.
 U nás dostanete vše z jednoho místa – rychle, hladce a bez zbytečné ztráty energie.
-Méně času, více výsledků.`
+Méně času, více výsledků.`,
+        anvil: '3D model',
+        seo: 'SEO'
       },
       mission: {
         title: 'Naše mise',
@@ -241,44 +329,57 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`
       },
       team: {
         title: 'Náš tým',
-        "bits": "Bits – Design, frontend",
-        "bytes": "Bytes – Komunikace, backend"
+        bits: 'Bits – Design, frontend',
+        bytes: 'Bytes – Komunikace, backend'
       },
-      cta: {
-        button: 'Napište nám'
+      button: {
+        back: 'NA DOMOVSKOU STRÁNKU',
+        contact: 'KONTAKTUJTE NÁS'
       }
-    }
-    ,
+    },
     services: {
       title: 'Naše služby',
       web: {
         title: 'Vývoj webů',
-        description: 'Webové stránky na míru postavené na nejnovějších technologiích a optimalizované pro výkon.'
+        description:
+          'Webové stránky na míru postavené na nejnovějších technologiích a optimalizované pro výkon.'
       },
       branding: {
         title: 'Brand identita',
-        description: 'Jedinečné vizuální identity, které zachycují podstatu a osobnost vaší značky.'
+        description:
+          'Jedinečné vizuální identity, které zachycují podstatu a osobnost vaší značky.'
       },
       design: {
         title: 'UI/UX Design',
-        description: 'Uživatelsky orientovaný design, který vytváří poutavé a intuitivní digitální zážitky.'
+        description:
+          'Uživatelsky orientovaný design, který vytváří poutavé a intuitivní digitální zážitky.'
       }
+    },
+    pricing: {
+      intro: {
+        title: 'Cenik.txt'
+      },
+      text:
+        'U nás nenajdete univerzální balíčky ani pevné ceny. Každý projekt je jiný a zaslouží si individuální přístup.\n\n Navrhujeme weby, grafiku, branding i tiskové materiály přesně na míru vašim potřebám. Ať hledáte jednoduchý web, kompletní identitu, nebo tiskové řešení, postaráme se, aby vše sedělo vaší vizi.\n\n Ještě před začátkem si vyjasníme detaily, abyste přesně věděli, co dostanete — bez nepříjemných překvapení.'
     },
     blog: {
       title: 'Nejnovější příspěvky',
       post1: {
         title: 'Budoucnost webového designu',
-        excerpt: 'Zkoumání nadcházejících trendů a technologií, které formují digitální prostředí.',
+        excerpt:
+          'Zkoumání nadcházejících trendů a technologií, které formují digitální prostředí.',
         date: '15. března 2025'
       },
       post2: {
         title: 'Retro herní UI v moderním webu',
-        excerpt: 'Jak začlenit nostalgické herní prvky do současného webového designu.',
+        excerpt:
+          'Jak začlenit nostalgické herní prvky do současného webového designu.',
         date: '10. března 2025'
       },
       post3: {
         title: 'Tipy pro optimalizaci výkonu',
-        excerpt: 'Základní techniky pro vytvoření bleskově rychlých webových stránek.',
+        excerpt:
+          'Základní techniky pro vytvoření bleskově rychlých webových stránek.',
         date: '5. března 2025'
       }
     },
@@ -288,19 +389,23 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`
       email: 'Email',
       message: 'Zpráva',
       send: 'Odeslat zprávu',
-      info: 'Jste připraveni začít svůj projekt? Napište nám a společně vytvoříme něco úžasného.'
+      info:
+        'Jste připraveni začít svůj projekt? Napište nám a společně vytvoříme něco úžasného.'
     },
     terms: {
       title: 'Obchodní podmínky',
-      content: 'Tyto obchodní podmínky stanovují pravidla a předpisy pro používání služeb Bits&Bytes. Přístupem a používáním našich služeb přijímáte tyto obchodní podmínky v plném rozsahu...'
+      content:
+        'Tyto obchodní podmínky stanovují pravidla a předpisy pro používání služeb Bits&Bytes. Přístupem a používáním našich služeb přijímáte tyto obchodní podmínky v plném rozsahu...'
     },
     gdpr: {
       title: 'GDPR a Zásady ochrany osobních údajů',
-      content: 'Respektujeme vaše soukromí a zavázali jsme se chránit vaše osobní údaje. Tyto zásady ochrany osobních údajů vás informují o tom, jak se staráme o vaše osobní údaje a vaše práva na ochranu soukromí...'
+      content:
+        'Respektujeme vaše soukromí a zavázali jsme se chránit vaše osobní údaje. Tyto zásady ochrany osobních údajů vás informují o tom, jak se staráme o vaše osobní údaje a vaše práva na ochranu soukromí...'
     },
     cookies: {
       title: 'Nastavení cookies',
-      description: 'Používáme cookies pro zlepšení vašeho prohlížení a analýzu našeho provozu.',
+      description:
+        'Používáme cookies pro zlepšení vašeho prohlížení a analýzu našeho provozu.',
       accept: 'Přijmout vše',
       decline: 'Odmítnout',
       customize: 'Přizpůsobit',
@@ -308,6 +413,87 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`
       analytics: 'Analytické cookies',
       marketing: 'Marketingové cookies',
       save: 'Uložit předvolby'
+    },
+
+    /* --- Stránka Služby (arrays -> objects) --- */
+    ServicesSection: {
+      hero: {
+        title: 'Sluzby.txt',
+        headline: 'Weby, co fungují. Značky, co se zapamatují.',
+        sub: 'Od nápadu po kód — a vše k tisku, co budete potřebovat.'
+      },
+      menu: {
+        web: 'Tvorba webu',
+        seo: 'SEO',
+        branding: 'Brand identita',
+        print: 'Tisk & Produkce'
+      },
+      web: {
+        title: 'Tvorba webu',
+        lead:
+          'Weby na míru s čistým kódem, rychlým načítáním a designem, který sedí vaší značce — ne naopak.',
+        bullets: {
+          i1: 'Front-end v React/TypeScript s pixel-precizností',
+          i2: 'Responzivně od základu, přístupnost jako standard',
+          i3: 'Výkon na prvním místě: obrázky, lazy-loading, code-split',
+          i4: 'Napojení na CMS/headless, když to dává smysl'
+        },
+        showcaseTitle: 'Vybrané projekty',
+        showcase: {
+          s1: {
+            title: 'Pragoline.cz',
+            note: 'Produktové detaily, dynamické OG, Cloudinary obrázky',
+            href: '/projects/pragoline'
+          },
+          s2: {
+            title: 'Cotton Candy Cakes',
+            note: 'Jemný brand web s jednoduchou správou',
+            href: '/projects/cotton-candy'
+          },
+          s3: {
+            title: 'Hawks Security',
+            note: 'Čistý B2B landing s lead capture',
+            href: '/projects/hawks'
+          }
+        },
+        cta: 'Chcete web, který opravdu konvertuje? Napište nám.'
+      },
+      seo: {
+        title: 'SEO',
+        lead:
+          'SEO do praxe — technický stav, smysluplný obsah a stránky, které lidé najdou.',
+        bullets: {
+          i1: 'Technické SEO: struktura, meta, schema, sitemap, Vitals',
+          i2: 'On-page: hierarchie obsahu, interní prolinkování, záměr',
+          i3: 'Výkon: lighthouse-friendly build, cache & CDN',
+          i4: 'Analytika: respekt k soukromí a srozumitelné reporty'
+        },
+        cta: 'Najdeme rychlá zlepšení a postavíme dlouhodobý plán.'
+      },
+      branding: {
+        title: 'Brand identita',
+        lead:
+          'Od loga a barev po kompletní manuál. Jeden vzhled. Jeden hlas. Všude.',
+        bullets: {
+          i1: 'Logo systémy (primární/sekundární/znak)',
+          i2: 'Barevnost a písmo, které přežijí realitu',
+          i3: 'UI kity pro web i sítě',
+          i4: 'Brand manuál, který budete používat'
+        },
+        cta: 'Začněme mini identitou, nebo rovnou celým manuálem.'
+      },
+      print: {
+        title: 'Tisk & Produkce',
+        lead:
+          'Design i tisk na jednom místě — od vizitek po bannery a obaly.',
+        bullets: {
+          i1: 'Vizitky, letáky, samolepky, plakáty, roll-upy',
+          i2: 'Katalogy, brožury, sešity',
+          i3: 'Obalové návrhy a podklady pro výrobu',
+          i4: 'Velkoformát & outdoor'
+        },
+        cta: 'Pošlete podklady nebo cíl — připravíme, vytiskneme, doručíme.'
+      }
     }
   }
 };

@@ -18,9 +18,9 @@ declare global {
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import SnapScrollContainer, { type SnapScrollHandle, useIsDesktop } from '../uti/SnapScrollContainer';
-import { IdeaToRealityBar } from '../uti/IdeaToRealityBar';
-import MobileMissionVision from '../uti/MobileMissionVision';
+import SnapScrollContainer, { type SnapScrollHandle, useIsDesktop } from '../about/SnapScrollContainer';
+import { IdeaToRealityBar } from '../about/IdeaToRealityBar';
+import MobileMissionVision from '../about/MobileMissionVision';
 
 /* =========================
    FLOATING MENU (FAB)
@@ -30,8 +30,11 @@ const FloatingMenu: React.FC<{
   onContact: () => void;
   getScrollEl?: () => (HTMLElement | Document | null);
 }> = ({ onBack, onContact, getScrollEl }) => {
+  const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
   const boxRef = React.useRef<HTMLDivElement>(null);
+
+
 
   // zavření na klik mimo a na Escape
   React.useEffect(() => {
@@ -68,7 +71,7 @@ const FloatingMenu: React.FC<{
   }, [getScrollEl]);
 
   // jemný „bounce“ při klepnutí
-  const btnSpring = { type: 'spring', stiffness: 500, damping: 18 };
+
 
   return (
     <div
@@ -137,28 +140,16 @@ const FloatingMenu: React.FC<{
         {open && (
           <ul
             className="absolute right-0 mt-2 w-[min(88vw,260px)]
-                       rounded-2xl overflow-hidden
-                       bg-black/70 backdrop-blur-lg border border-white/20
-                       shadow-2xl"
+             rounded-2xl overflow-hidden
+             bg-black/70 backdrop-blur-lg border border-white/20
+             shadow-2xl"
           >
-            <li>
-              <button
-                onClick={() => { setOpen(false); onBack(); }}
-                className="w-full text-left px-4 py-3 flex items-center gap-3
-                           text-white hover:bg-white/10 transition"
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                  <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span>Back</span>
-              </button>
-            </li>
-            <li className="border-t border-white/10" />
+            {/* Contact */}
             <li>
               <button
                 onClick={() => { setOpen(false); onContact(); }}
                 className="w-full text-left px-4 py-3 flex items-center gap-3
-                           text-white hover:bg-white/10 transition"
+               text-white hover:bg-white/10 transition"
               >
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                   <path d="M4 6h16v12H4z" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -167,6 +158,36 @@ const FloatingMenu: React.FC<{
                 <span>Contact</span>
               </button>
             </li>
+
+            <li className="border-t border-white/10" />
+
+            {/* Ostatní položky */}
+            {[
+              { label: 'Home', to: '/' },
+              { label: 'About', to: '/about' },
+              { label: 'Services', to: '/services' },
+              { label: 'Pricing', to: '/pricing' },
+              { label: 'Blog', to: '/blog' },
+              { label: 'Terms', to: '/terms' },
+              { label: 'GDPR', to: '/gdpr' },
+            ].map((item) => (
+              <li key={item.to} className="border-t border-white/10">
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate(item.to);
+                  }}
+                  className="w-full text-left px-4 py-3 flex items-center gap-3
+                 text-white hover:bg-white/10 transition"
+                >
+                  {/* Bílá tečka, stejná šířka jako ikona Contact */}
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4" fill="white" />
+                  </svg>
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
           </ul>
         )}
       </div>

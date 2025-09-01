@@ -26,10 +26,14 @@ export default {
           '50%': {
             transform: 'translate(-50%, -50%) translateX(10px)',
           },
+          caretBlink: {
+            '0%,49%': { opacity: '1' },
+            '50%,100%': { opacity: '0' },
+          },
         },
       },
       animation: {
-        wiggle: 'wiggle 2s ease-in-out infinite',
+        wiggle: 'wiggle 2s ease-in-out infinite', 'caret-blink': 'caretBlink 1s steps(2, end) infinite',
       },
     },
   },
