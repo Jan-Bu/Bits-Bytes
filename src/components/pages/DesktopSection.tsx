@@ -56,131 +56,131 @@ const DesktopIcon: React.FC<{
   id, label, x, y, onOpen, onMove, src, desktopRef,
   ICON_SIZE, DESKTOP_MARGIN, TASKBAR_HEIGHT, snapX, snapY
 }) => {
-  const local = useRef<{ dx: number; dy: number; dragging: boolean; startedAt?: { x: number; y: number } }>({
-    dx: 0, dy: 0, dragging: false,
-  });
-  const raf = useRef<number | null>(null);
+    const local = useRef<{ dx: number; dy: number; dragging: boolean; startedAt?: { x: number; y: number } }>({
+      dx: 0, dy: 0, dragging: false,
+    });
+    const raf = useRef<number | null>(null);
 
-  const clampToDesktop = (nx: number, ny: number) => {
-    const desk = desktopRef.current;
-    if (!desk) return { nx, ny };
-    const rect = desk.getBoundingClientRect();
-    const maxX = rect.width - DESKTOP_MARGIN - ICON_SIZE;
-    const maxY = rect.height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 30);
-    return {
-      nx: Math.min(Math.max(nx, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxX)),
-      ny: Math.min(Math.max(ny, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxY)),
+    const clampToDesktop = (nx: number, ny: number) => {
+      const desk = desktopRef.current;
+      if (!desk) return { nx, ny };
+      const rect = desk.getBoundingClientRect();
+      const maxX = rect.width - DESKTOP_MARGIN - ICON_SIZE;
+      const maxY = rect.height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 30);
+      return {
+        nx: Math.min(Math.max(nx, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxX)),
+        ny: Math.min(Math.max(ny, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxY)),
+      };
     };
-  };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    e.preventDefault(); // mobil: vypne nativní scroll/zoom + emulované mouse eventy
-    const target = e.currentTarget as HTMLDivElement;
-    if (e.isPrimary) target.setPointerCapture(e.pointerId);
+    const onPointerDown = (e: React.PointerEvent) => {
+      e.preventDefault(); // mobil: vypne nativní scroll/zoom + emulované mouse eventy
+      const target = e.currentTarget as HTMLDivElement;
+      if (e.isPrimary) target.setPointerCapture(e.pointerId);
 
-    local.current.dragging = true;
+      local.current.dragging = true;
 
-    const rect = desktopRef.current?.getBoundingClientRect();
-    const desktopLeft = rect?.left ?? 0;
-    const desktopTop = rect?.top ?? 0;
-    local.current.dx = e.clientX - (desktopLeft + x);
-    local.current.dy = e.clientY - (desktopTop + y);
-    local.current.startedAt = { x: e.clientX, y: e.clientY };
-  };
+      const rect = desktopRef.current?.getBoundingClientRect();
+      const desktopLeft = rect?.left ?? 0;
+      const desktopTop = rect?.top ?? 0;
+      local.current.dx = e.clientX - (desktopLeft + x);
+      local.current.dy = e.clientY - (desktopTop + y);
+      local.current.startedAt = { x: e.clientX, y: e.clientY };
+    };
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!local.current.dragging) return;
-    e.preventDefault();
+    const onPointerMove = (e: React.PointerEvent) => {
+      if (!local.current.dragging) return;
+      e.preventDefault();
 
-    if (raf.current) cancelAnimationFrame(raf.current);
-    raf.current = requestAnimationFrame(() => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+      raf.current = requestAnimationFrame(() => {
+        const rect = desktopRef.current?.getBoundingClientRect();
+        const desktopLeft = rect?.left ?? 0;
+        const desktopTop = rect?.top ?? 0;
+
+        const nxRaw = e.clientX - desktopLeft - local.current.dx;
+        const nyRaw = e.clientY - desktopTop - local.current.dy;
+
+        // malý práh proti mikro-pohybům prstu
+        const s = local.current.startedAt;
+        if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) < 4) return;
+
+        const { nx, ny } = clampToDesktop(nxRaw, nyRaw);
+        onMove(id, nx, ny);
+      });
+    };
+
+    const finishDrag = (e: React.PointerEvent) => {
+      const target = e.currentTarget as HTMLDivElement;
+      try { target.releasePointerCapture(e.pointerId); } catch { }
+      if (!local.current.dragging) return;
+      local.current.dragging = false;
+
       const rect = desktopRef.current?.getBoundingClientRect();
       const desktopLeft = rect?.left ?? 0;
       const desktopTop = rect?.top ?? 0;
 
       const nxRaw = e.clientX - desktopLeft - local.current.dx;
       const nyRaw = e.clientY - desktopTop - local.current.dy;
-
-      // malý práh proti mikro-pohybům prstu
-      const s = local.current.startedAt;
-      if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) < 4) return;
-
       const { nx, ny } = clampToDesktop(nxRaw, nyRaw);
-      onMove(id, nx, ny);
-    });
-  };
 
-  const finishDrag = (e: React.PointerEvent) => {
-    const target = e.currentTarget as HTMLDivElement;
-    try { target.releasePointerCapture(e.pointerId); } catch {}
-    if (!local.current.dragging) return;
-    local.current.dragging = false;
+      onMove(id, snapX(nx), snapY(ny));
+    };
 
-    const rect = desktopRef.current?.getBoundingClientRect();
-    const desktopLeft = rect?.left ?? 0;
-    const desktopTop = rect?.top ?? 0;
+    const onPointerUp = (e: React.PointerEvent) => {
+      e.preventDefault();
+      finishDrag(e);
+    };
 
-    const nxRaw = e.clientX - desktopLeft - local.current.dx;
-    const nyRaw = e.clientY - desktopTop - local.current.dy;
-    const { nx, ny } = clampToDesktop(nxRaw, nyRaw);
+    const onPointerCancel = (e: React.PointerEvent) => {
+      if (!local.current.dragging) return;
+      e.preventDefault();
+      const target = e.currentTarget as HTMLDivElement;
+      try { target.releasePointerCapture(e.pointerId); } catch { }
+      local.current.dragging = false;
+    };
 
-    onMove(id, snapX(nx), snapY(ny));
-  };
-
-  const onPointerUp = (e: React.PointerEvent) => {
-    e.preventDefault();
-    finishDrag(e);
-  };
-
-  const onPointerCancel = (e: React.PointerEvent) => {
-    if (!local.current.dragging) return;
-    e.preventDefault();
-    const target = e.currentTarget as HTMLDivElement;
-    try { target.releasePointerCapture(e.pointerId); } catch {}
-    local.current.dragging = false;
-  };
-
-  return (
-    <div
-      role="button"
-      onDoubleClick={() => onOpen(id)}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
-      onContextMenu={(e) => e.preventDefault()}
-      className="absolute flex flex-col items-center cursor-default select-none group touch-none"
-      style={{
-        left: x,
-        top: y,
-        width: ICON_SIZE + 28,
-        // touchAction: 'none' -> řeší Tailwind class `touch-none`
-        userSelect: 'none',
-      }}
-    >
+    return (
       <div
-        className="grid place-items-center rounded-[2px] group-hover:bg-white/10 select-none [-webkit-user-drag:none]"
-        style={{ width: ICON_SIZE, height: ICON_SIZE, imageRendering: 'pixelated' }}
+        role="button"
+        onDoubleClick={() => onOpen(id)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onContextMenu={(e) => e.preventDefault()}
+        className="absolute flex flex-col items-center cursor-default select-none group touch-none"
+        style={{
+          left: x,
+          top: y,
+          width: ICON_SIZE + 28,
+          // touchAction: 'none' -> řeší Tailwind class `touch-none`
+          userSelect: 'none',
+        }}
       >
-        <img
-          src={src}
-          alt={label}
-          className="select-none pointer-events-none [-webkit-user-drag:none]"
-          style={{
-            width: ICON_SIZE,
-            height: ICON_SIZE,
-            objectFit: 'contain',
-            imageRendering: 'pixelated',
-          }}
-          draggable={false}
-        />
+        <div
+          className="grid place-items-center rounded-[2px] group-hover:bg-white/10 select-none [-webkit-user-drag:none]"
+          style={{ width: ICON_SIZE, height: ICON_SIZE, imageRendering: 'pixelated' }}
+        >
+          <img
+            src={src}
+            alt={label}
+            className="select-none pointer-events-none [-webkit-user-drag:none]"
+            style={{
+              width: ICON_SIZE,
+              height: ICON_SIZE,
+              objectFit: 'contain',
+              imageRendering: 'pixelated',
+            }}
+            draggable={false}
+          />
+        </div>
+        <div className="mt-2 text-white text-center leading-tight drop-shadow-[1px_1px_0_rgba(0,0,0,0.9)] whitespace-pre-wrap break-words px-1 text-[13px] sm:text-[14px] md:text-[15px] select-none">
+          {label}
+        </div>
       </div>
-      <div className="mt-2 text-white text-center leading-tight drop-shadow-[1px_1px_0_rgba(0,0,0,0.9)] whitespace-pre-wrap break-words px-1 text-[13px] sm:text-[14px] md:text-[15px] select-none">
-        {label}
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
 const DesktopSection: React.FC = () => {
   const navigate = useNavigate();
@@ -197,10 +197,35 @@ const DesktopSection: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const color = '#008080'; // stejná jako pozadí desktopu
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    let created = false;
+
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      created = true;
+    }
+
+    const prevContent = meta.content;
+    meta.content = color;
+
+    if (created) document.head.appendChild(meta);
+
+    return () => {
+      if (created) {
+        meta?.remove();
+      } else {
+        meta!.content = prevContent; // vrátí původní hodnotu
+      }
+    };
+  }, []);
+
   // Rozměry + taskbar rezerva
   const { ICON_SIZE, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT } = useMemo(() => {
-    if (bp === 'mobile')   return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 16, TASKBAR_HEIGHT: 64 };
-    if (bp === 'tablet')   return { ICON_SIZE: 96, GRID: 140, DESKTOP_MARGIN: 20, TASKBAR_HEIGHT: 48 };
+    if (bp === 'mobile') return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 16, TASKBAR_HEIGHT: 64 };
+    if (bp === 'tablet') return { ICON_SIZE: 96, GRID: 140, DESKTOP_MARGIN: 20, TASKBAR_HEIGHT: 48 };
     /* desktop */          return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 24, TASKBAR_HEIGHT: 40 };
   }, [bp]);
 
@@ -238,7 +263,7 @@ const DesktopSection: React.FC = () => {
 
   // Tablet layout (wrap do více sloupců podle výšky)
   const layoutTabletColumns = () => {
-    const ids: AppId[] = ['about','services','pricing','blog','contact','terms','gdpr'];
+    const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr'];
     const rect = desktopRef.current?.getBoundingClientRect();
     const height = rect?.height ?? window.innerHeight;
 
@@ -259,7 +284,7 @@ const DesktopSection: React.FC = () => {
   const initialIcons = useMemo((): { id: AppId; x: number; y: number }[] => {
     if (bp === 'mobile' && fourColXs) {
       const baseY = snapCoord(DESKTOP_MARGIN);
-      const ids: AppId[] = ['about','services','pricing','blog','contact','terms','gdpr'];
+      const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr'];
       return ids.map((id, i) => {
         const col = i % 4;
         const row = Math.floor(i / 4);
@@ -274,15 +299,15 @@ const DesktopSection: React.FC = () => {
     const baseX = snapCoord(DESKTOP_MARGIN);
     const baseY = snapCoord(DESKTOP_MARGIN);
     return [
-      { id: 'about',    x: baseX, y: baseY + 0 * GRID },
+      { id: 'about', x: baseX, y: baseY + 0 * GRID },
       { id: 'services', x: baseX, y: baseY + 1 * GRID },
-      { id: 'pricing',  x: baseX, y: baseY + 2 * GRID },
-      { id: 'blog',     x: baseX, y: baseY + 3 * GRID },
-      { id: 'contact',  x: baseX, y: baseY + 4 * GRID },
-      { id: 'terms',    x: baseX, y: baseY + 5 * GRID },
-      { id: 'gdpr',     x: baseX, y: baseY + 6 * GRID },
+      { id: 'pricing', x: baseX, y: baseY + 2 * GRID },
+      { id: 'blog', x: baseX, y: baseY + 3 * GRID },
+      { id: 'contact', x: baseX, y: baseY + 4 * GRID },
+      { id: 'terms', x: baseX, y: baseY + 5 * GRID },
+      { id: 'gdpr', x: baseX, y: baseY + 6 * GRID },
     ];
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bp, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT, ICON_SIZE, fourColXs]);
 
   const [iconPos, setIconPos] = useState<Record<AppId, { x: number; y: number }>>(() => {
@@ -318,20 +343,20 @@ const DesktopSection: React.FC = () => {
         return next;
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bp, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT, ICON_SIZE, fourColXs]);
 
   const [open, setOpen] = useState<AppId[]>([]);
   const [zOrder, setZOrder] = useState<AppId[]>([]);
 
   const titles: Record<AppId, string> = {
-    about:   t('desktop.icons.about')    || t('nav.about')    || 'About',
-    services:t('desktop.icons.services') || t('nav.services') || 'Services',
-    pricing: t('desktop.icons.pricing')  || t('nav.pricing')  || 'Pricing',
-    blog:    t('desktop.icons.blog')     || t('nav.blog')     || 'Blog',
-    contact: t('desktop.icons.contact')  || t('nav.contact')  || 'Contact',
-    terms:   t('desktop.icons.terms')    || t('nav.terms')    || 'Terms',
-    gdpr:    t('desktop.icons.gdpr')     || t('nav.gdpr')     || 'GDPR',
+    about: t('desktop.icons.about') || t('nav.about') || 'About',
+    services: t('desktop.icons.services') || t('nav.services') || 'Services',
+    pricing: t('desktop.icons.pricing') || t('nav.pricing') || 'Pricing',
+    blog: t('desktop.icons.blog') || t('nav.blog') || 'Blog',
+    contact: t('desktop.icons.contact') || t('nav.contact') || 'Contact',
+    terms: t('desktop.icons.terms') || t('nav.terms') || 'Terms',
+    gdpr: t('desktop.icons.gdpr') || t('nav.gdpr') || 'GDPR',
   };
 
   const bringToFront = (id: AppId) =>
