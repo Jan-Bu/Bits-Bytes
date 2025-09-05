@@ -6,10 +6,11 @@ import { accentPresets, Accent } from '../services/theme';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import RetroCRTBG from '../services/RetroCRTBG';
+import RetroBrowserCard, { type ProjectItem } from '../services/RetroBrowserCard';
 
 type Props = { t: (key: string) => string; lang?: 'cs' | 'en' };
 
-const ServicesSection: React.FC<Props> = ({ t, lang = 'cs' }) => {
+const ServicesSection: React.FC<Props> = ({ t, lang = 'en' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<'hero' | 'web' | 'seo' | 'branding' | 'print'>('hero');
 
@@ -70,8 +71,11 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'cs' }) => {
   }, [fullHeadline]);
 
   // Showcase items for WEB section (from translations object)
-  const showcaseItems = useMemo(() => {
-    const s = ((translations as any)[lang]?.ServicesSection?.web?.showcase ?? {}) as Record<string, { title: string; note?: string; href?: string }>;
+  const showcaseItems = useMemo<ProjectItem[]>(() => {
+    const s = ((translations as any)[lang]?.ServicesSection?.web?.showcase ?? {}) as Record<
+      string,
+      { title: string; note?: string; href?: string; preview?: string }
+    >;
     return Object.values(s);
   }, [lang]);
 
@@ -101,7 +105,7 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'cs' }) => {
   return (
     <div className="relative min-h-screen text-white">
       <RetroCRTBG intensity={0.08} glow={0.10} vignette={0.28} />
-      
+
       {/* TOP NAVBAR (sticky) */}
       <nav className="fixed top-0 w-full bg-gray-900/90 backdrop-blur-sm border-b-2 border-green-400 z-50">
         <div className="container mx-auto px-4">
@@ -273,21 +277,9 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'cs' }) => {
               learnMoreLabel={t('ServicesSection.web.cta')}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {showcaseItems.map((it, i) => (
-                <a
-                  key={i}
-                  href={it.href || '#'}
-                  className={['block bg-gray-900 border-2 p-4 hover:shadow-lg transition-all duration-300', accentPresets.green.border, accentPresets.green.hoverShadow].join(' ')}
-                  target={it.href ? '_blank' : undefined}
-                  rel={it.href ? 'noreferrer' : undefined}
-                >
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-white font-bold">{it.title}</h4>
-                    <ExternalLink className={[accentPresets.green.text, 'w-4 h-4'].join(' ')} />
-                  </div>
-                  {it.note && <p className="text-gray-400 text-sm mt-2">{it.note}</p>}
-                </a>
+                <RetroBrowserCard key={i} item={it} accent="green" />
               ))}
             </div>
           </div>

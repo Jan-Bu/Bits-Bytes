@@ -3,24 +3,29 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { MainScene } from './scenes/MainScene';
 
-// Centrální mapování sekcí → URL (home vede na '/')
-const ROUTES: Record<string, string> = {
-  home: '/',
-  about: '/about',
-  services: '/services',
-  pricing: '/pricing',
-  blog: '/blog',
-  contact: '/contact',
-  terms: '/terms',
-  gdpr: '/gdpr',
+type Lang = 'cs' | 'en';
+type Props = {
+  navigate: (path: string) => void;
+  getLang: () => Lang;
+  setLang: (l?: Lang) => void; // u tebe voláme bez argumentu = toggle
 };
 
-export const PhaserGame: React.FC<{ onNavigate?: (path: string) => void }> = ({ onNavigate }) => {
+export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
 
+  // Držíme aktuální callbacky v ref, ať nemusíme re-initovat hru
+  const navigateRef = useRef(navigate);
+  const getLangRef = useRef(getLang);
+  const setLangRef = useRef(setLang);
+
+  useEffect(() => { navigateRef.current = navigate; }, [navigate]);
+  useEffect(() => { getLangRef.current = getLang; }, [getLang]);
+  useEffect(() => { setLangRef.current = setLang; }, [setLang]);
+
+  // Hru vytvoříme pouze jednou
   useEffect(() => {
-    if (!hostRef.current) return;
+    if (!hostRef.current || gameRef.current) return;
 
     const isTall = window.innerHeight > window.innerWidth;
     const BASE = isTall ? { w: 960, h: 1540 } : { w: 2560, h: 1440 };
@@ -47,20 +52,18 @@ export const PhaserGame: React.FC<{ onNavigate?: (path: string) => void }> = ({ 
     const game = new Phaser.Game(config);
     gameRef.current = game;
 
-    // Handler navigace: mapuje sekci na URL a nenaviguje, pokud už jsme na cíli
-    const onNav = (section: string) => {
-      const path = ROUTES[section] ?? '/';
-      if (window.location.pathname !== path) onNavigate?.(path);
-    };
-
-    game.events.on('navigate', onNav);
+    // Předáme scéně WRAPPERY, které čtou z refů (stabilní, bez reinitu)
+    game.scene.start('MainScene', {
+      navigate: (path: string) => navigateRef.current(path),
+      getLang: () => getLangRef.current(),
+      setLang: (l?: Lang) => setLangRef.current(l),
+    });
 
     return () => {
-      game.events.off('navigate', onNav);
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };
-  }, [onNavigate]);
+  }, []); // <- žádné závislosti!
 
   return (
     <div
