@@ -17,7 +17,8 @@ declare global {
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+// ❌ už nepotřebujeme useNavigate v menu
+// import { useNavigate } from 'react-router-dom';
 import SnapScrollContainer, { type SnapScrollHandle, useIsDesktop } from '../about/SnapScrollContainer';
 import { IdeaToRealityBar } from '../about/IdeaToRealityBar';
 import MobileMissionVision from '../about/MobileMissionVision';
@@ -26,15 +27,12 @@ import MobileMissionVision from '../about/MobileMissionVision';
    FLOATING MENU (FAB)
    ========================= */
 const FloatingMenu: React.FC<{
-  onBack: () => void;
-  onContact: () => void;
+  t: (key: string) => string;
+  onExit?: () => void;
   getScrollEl?: () => (HTMLElement | Document | null);
-}> = ({ onBack, onContact, getScrollEl }) => {
-  const navigate = useNavigate();
+}> = ({ t, onExit, getScrollEl }) => {
   const [open, setOpen] = React.useState(false);
   const boxRef = React.useRef<HTMLDivElement>(null);
-
-
 
   // zavření na klik mimo a na Escape
   React.useEffect(() => {
@@ -69,9 +67,6 @@ const FloatingMenu: React.FC<{
       el.removeEventListener('scroll', onScroll);
     };
   }, [getScrollEl]);
-
-  // jemný „bounce“ při klepnutí
-
 
   return (
     <div
@@ -136,7 +131,7 @@ const FloatingMenu: React.FC<{
           </div>
         </motion.button>
 
-        {/* Panel */}
+        {/* Panel – JEDINÁ POLOŽKA: Close the game */}
         {open && (
           <ul
             className="absolute right-0 mt-2 w-[min(88vw,260px)]
@@ -144,50 +139,20 @@ const FloatingMenu: React.FC<{
              bg-black/70 backdrop-blur-lg border border-white/20
              shadow-2xl"
           >
-            {/* Contact */}
             <li>
               <button
-                onClick={() => { setOpen(false); onContact(); }}
+                onClick={() => { setOpen(false); onExit?.(); }}
                 className="w-full text-left px-4 py-3 flex items-center gap-3
-               text-white hover:bg-white/10 transition"
+                 text-white hover:bg-white/10 transition"
               >
+                {/* Ikona power/off minimalisticky */}
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                  <path d="M4 6h16v12H4z" fill="none" stroke="currentColor" strokeWidth="2" />
-                  <path d="M22 6l-10 7L2 6" fill="none" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 3v9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M5.5 7A8 8 0 1 0 18.5 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                <span>Contact</span>
+                <span>{t('about.menu.closeGame')}</span>
               </button>
             </li>
-
-            <li className="border-t border-white/10" />
-
-            {/* Ostatní položky */}
-            {[
-              { label: 'Home', to: '/' },
-              { label: 'About', to: '/about' },
-              { label: 'Services', to: '/services' },
-              { label: 'Pricing', to: '/pricing' },
-              { label: 'Blog', to: '/blog' },
-              { label: 'Terms', to: '/terms' },
-              { label: 'GDPR', to: '/gdpr' },
-            ].map((item) => (
-              <li key={item.to} className="border-t border-white/10">
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    navigate(item.to);
-                  }}
-                  className="w-full text-left px-4 py-3 flex items-center gap-3
-                 text-white hover:bg-white/10 transition"
-                >
-                  {/* Bílá tečka, stejná šířka jako ikona Contact */}
-                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                    <circle cx="12" cy="12" r="4" fill="white" />
-                  </svg>
-                  <span>{item.label}</span>
-                </button>
-              </li>
-            ))}
           </ul>
         )}
       </div>
@@ -197,9 +162,10 @@ const FloatingMenu: React.FC<{
 
 interface AboutSectionProps {
   t: (key: string) => string;
+  onExit?: () => void; // ⬅️ přidáno: zavření „hry“ z menu
 }
 
-const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
+const AboutSection: React.FC<AboutSectionProps> = ({ t, onExit }) => {
   useEffect(() => {
     let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (!meta) {
@@ -214,7 +180,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
 
   const [visibleSections, setVisibleSections] = useState(new Set<string>());
   const [anvilHintVisible, setAnvilHintVisible] = useState(true);
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // ⬅️ už nepotřebujeme
 
   // Ref na SnapScrollContainer pro jumpTo
   const snapRef = useRef<SnapScrollHandle>(null);
@@ -228,28 +194,24 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     if (isInView && !hasAnimated) setHasAnimated(true);
   }, [isInView, hasAnimated]);
 
-  /* ==========
-   * SOUND: reuse jediného <audio>, preload="auto", priming po 1. gestu,
-   * currentTime=0 před play()
-   * ========== */
+  /* ========== SOUND ========== */
   const audioElRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const el = new Audio('/sounds/boink.mp3');
     el.preload = 'auto';
-    el.crossOrigin = 'anonymous'; // když budeš mít CDN, vyhneš se CORS problémům
+    el.crossOrigin = 'anonymous';
     audioElRef.current = el;
 
-    // odemknout audio stack prvním gestem uživatele (mobile Safari apod.)
     const unlock = () => {
       el.muted = true;
       el.play()
         .then(() => {
           el.pause();
-          el.currentTime = 0; // připrav na okamžité přehrání
+          el.currentTime = 0;
           el.muted = false;
         })
-        .catch(() => { /* ignoruj – jen priming */ });
+        .catch(() => { /* ignore */ });
       window.removeEventListener('touchstart', unlock);
       window.removeEventListener('mousedown', unlock);
     };
@@ -267,11 +229,9 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
     const el = audioElRef.current;
     if (!el) return;
     try {
-      el.currentTime = 0; // ✅ zajistí “klik” od začátku bez latence
+      el.currentTime = 0;
       void el.play();
-    } catch {
-      // no-op
-    }
+    } catch {}
   };
 
   // IntersectionObserver pro fade-in sekcí
@@ -297,8 +257,8 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
       className="relative overflow-y-auto text-white font-jersey overscroll-contain h-[calc(var(--vh,1vh)*100)] md:h-screen"
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
-      {/* FLOATING MENU – vždy nahoře */}
-      <FloatingMenu onBack={() => navigate('/')} onContact={() => navigate('/contact')} />
+      {/* FLOATING MENU – jen „Close the game“ */}
+      <FloatingMenu t={t} onExit={onExit} />
 
       {/* FIXED background */}
       <div
@@ -360,8 +320,8 @@ const AboutSection: React.FC<AboutSectionProps> = ({ t }) => {
             className="object-contain cursor-pointer select-none"
             style={{ width: 'clamp(140px, 20vmin, 320px)', height: 'clamp(140px, 20vmin, 320px)' }}
             onClick={() => {
-              playSound();                // ✅ nejdřív zvuk
-              snapRef.current?.jumpTo('about-skills'); // potom navigace
+              playSound();
+              snapRef.current?.jumpTo('about-skills');
             }}
           />
         </div>
