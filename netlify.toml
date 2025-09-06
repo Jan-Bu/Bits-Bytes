@@ -3,8 +3,7 @@
 path = "/proxy"
 function = "proxy"
 
-# ⬇ pokud máš SPA fallback, MUSÍ být až za /proxy
-# (jinak ti to sežere /proxy a servíruje index.html)
+# Pokud používáš SPA fallback, musí být AŽ za /proxy
 [[redirects]]
 from = "/proxy"
 to = "/.netlify/edge-functions/proxy"
