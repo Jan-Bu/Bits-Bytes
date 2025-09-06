@@ -214,25 +214,25 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
             title: 'Pragoline.cz',
             note: 'Packaging & printing company, with dynamic SEO and custom animations',
             href: 'https://pragoline.cz',
-            preview: '/public/previews/pragoline.webp',
+            preview: '/previews/pragoline.webp',
           },
           s2: {
             title: 'Decor Art Studio',
             note: 'Decorative plasters, website with simple content management and gallery',
             href: 'https://decorartstudio.netlify.app',
-            preview: '/public/previews/decorart.webp',
+            preview: '/previews/decorart.webp',
           },
           s3: {
             title: 'Hawks Security',
             note: 'Security company, clean B2B landing with lead capture',
             href: 'https://hawks-security.com',
-            preview: '/public/previews/hawks.webp',
+            preview: '/previews/hawks.webp',
           },
           s4: {
             title: 'Falafelova',
             note: 'Food service, one-pager with menu and order buttons',
             href: 'https://falafe-lova.cz',
-            preview: '/public/previews/falafelova.webp',
+            preview: '/previews/falafelova.webp',
           },
         },
         seo: {
@@ -455,7 +455,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
       hero: {
         title: 'Sluzby.txt',
         headline: 'Weby, co fungují. Značky, co se zapamatují.',
-        sub: 'Od nápadu po kód — a vše k tisku, co budete potřebovat.',
+        sub: 'Od nápadu přes kód až k tisku, vše co budete potřebovat.',
       },
       menu: {
         web: 'Tvorba webu',

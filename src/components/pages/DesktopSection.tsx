@@ -12,6 +12,9 @@ import ContactSection from './ContactSection';
 import TermsSection from './TermsSection';
 import GDPRSection from './GDPRSection';
 
+/* ---- lokální rozšíření ID kvůli internímu prohlížeči ---- */
+type DesktopAppId = AppId | 'webview';
+
 /* --- Breakpoint hook --- */
 type BP = 'mobile' | 'tablet' | 'desktop';
 function useBreakpoint(): BP {
@@ -31,7 +34,9 @@ function useBreakpoint(): BP {
 }
 
 /* --- Ikony --- */
-const iconMeta: Record<AppId, { src: string }> = {
+type IconAppId = Exclude<AppId, 'webview'>;
+
+const iconMeta: Record<IconAppId, { src: string }> = {
   about: { src: '/icons/about_icon.png' },
   services: { src: '/icons/services_icon.png' },
   pricing: { src: '/icons/pricing_icon.png' },
@@ -74,7 +79,7 @@ const DesktopIcon: React.FC<{
     };
 
     const onPointerDown = (e: React.PointerEvent) => {
-      e.preventDefault(); // mobil: vypne nativní scroll/zoom + emulované mouse eventy
+      e.preventDefault();
       const target = e.currentTarget as HTMLDivElement;
       if (e.isPrimary) target.setPointerCapture(e.pointerId);
 
@@ -101,7 +106,7 @@ const DesktopIcon: React.FC<{
         const nxRaw = e.clientX - desktopLeft - local.current.dx;
         const nyRaw = e.clientY - desktopTop - local.current.dy;
 
-        // malý práh proti mikro-pohybům prstu
+        // práh proti mikro-pohybům prstu
         const s = local.current.startedAt;
         if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) < 4) return;
 
@@ -112,7 +117,7 @@ const DesktopIcon: React.FC<{
 
     const finishDrag = (e: React.PointerEvent) => {
       const target = e.currentTarget as HTMLDivElement;
-      try { target.releasePointerCapture(e.pointerId); } catch { }
+      try { target.releasePointerCapture(e.pointerId); } catch { /* noop */ }
       if (!local.current.dragging) return;
       local.current.dragging = false;
 
@@ -154,7 +159,6 @@ const DesktopIcon: React.FC<{
           left: x,
           top: y,
           width: ICON_SIZE + 28,
-          // touchAction: 'none' -> řeší Tailwind class `touch-none`
           userSelect: 'none',
         }}
       >
@@ -187,6 +191,14 @@ const DesktopSection: React.FC = () => {
   const { t, language } = useTranslation();
   const desktopRef = useRef<HTMLDivElement>(null);
   const bp = useBreakpoint();
+  const [webviewUrl, setWebviewUrl] = useState<string | null>(null);
+  const [webviewTitle, setWebviewTitle] = useState<string>('Browser');
+
+  const openWebview = (url: string, title?: string) => {
+    setWebviewUrl(url);
+    if (title) setWebviewTitle(title);
+    openApp('webview'); // otevře okno a přenese nahoru
+  };
 
   // 🔒 Zákaz scrollu celé stránky (po dobu mountu komponenty)
   useEffect(() => {
@@ -197,8 +209,9 @@ const DesktopSection: React.FC = () => {
     };
   }, []);
 
+  // Nastavení barvy horní lišty na mobilech JEN pro tuto stránku
   useEffect(() => {
-    const color = '#008080'; // stejná jako pozadí desktopu
+    const color = '#008080';
     let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     let created = false;
 
@@ -217,7 +230,7 @@ const DesktopSection: React.FC = () => {
       if (created) {
         meta?.remove();
       } else {
-        meta!.content = prevContent; // vrátí původní hodnotu
+        meta!.content = prevContent;
       }
     };
   }, []);
@@ -233,7 +246,7 @@ const DesktopSection: React.FC = () => {
   const snapCoord = (n: number) =>
     DESKTOP_MARGIN + Math.round((n - DESKTOP_MARGIN) / GRID) * GRID;
 
-  // Mobil: 4 sloupce (X snap na nejbližší ze 4 pozic)
+  // Mobil: 4 sloupce
   const fourColXs = useMemo(() => {
     if (bp !== 'mobile') return null;
     const cw = window.innerWidth;
@@ -346,10 +359,10 @@ const DesktopSection: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bp, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT, ICON_SIZE, fourColXs]);
 
-  const [open, setOpen] = useState<AppId[]>([]);
-  const [zOrder, setZOrder] = useState<AppId[]>([]);
+  const [open, setOpen] = useState<DesktopAppId[]>([]);
+  const [zOrder, setZOrder] = useState<DesktopAppId[]>([]);
 
-  const titles: Record<AppId, string> = {
+  const titles: Record<DesktopAppId, string> = {
     about: t('desktop.icons.about') || t('nav.about') || 'About',
     services: t('desktop.icons.services') || t('nav.services') || 'Services',
     pricing: t('desktop.icons.pricing') || t('nav.pricing') || 'Pricing',
@@ -357,35 +370,44 @@ const DesktopSection: React.FC = () => {
     contact: t('desktop.icons.contact') || t('nav.contact') || 'Contact',
     terms: t('desktop.icons.terms') || t('nav.terms') || 'Terms',
     gdpr: t('desktop.icons.gdpr') || t('nav.gdpr') || 'GDPR',
+    webview: webviewTitle || 'Browser',
   };
 
-  const bringToFront = (id: AppId) =>
+  const bringToFront = (id: DesktopAppId) =>
     setZOrder((cur) => [...cur.filter(x => x !== id), id]);
 
-  const openApp = (id: AppId) => {
+  const openApp = (id: DesktopAppId) => {
     setOpen((cur) => (cur.includes(id) ? cur : [...cur, id]));
     bringToFront(id);
   };
-  const closeApp = (id: AppId) => {
+  const closeApp = (id: DesktopAppId) => {
     setOpen((cur) => cur.filter(x => x !== id));
     setZOrder((cur) => cur.filter(x => x !== id));
   };
-  const minimizeApp = (_id: AppId) => {
-    // Manager si vlastní minimalizaci řeší interně – prop potřebuje jen signaturu.
+  const minimizeApp = (_id: DesktopAppId) => {
+    // Minimalizaci řeší interně DesktopWindowManager (prop je jen signatura).
   };
-  const maximizeApp = (id: AppId) => bringToFront(id);
+  const maximizeApp = (id: DesktopAppId) => bringToFront(id);
 
   const handleMoveIcon = (id: AppId, nx: number, ny: number) => {
     setIconPos((cur) => ({ ...cur, [id]: { x: nx, y: ny } }));
   };
 
   // ⚠️ About: fullscreen přes aboutFullscreenContent. Ostatní jako okna.
-  const renderContent = (id: AppId) => {
+  const renderContent = (id: DesktopAppId) => {
     switch (id) {
       case 'about':
-        return <div>{t('about.windowPlaceholder')}</div>;
+        return <AboutSection t={t} onExit={() => closeApp('about')} />;
       case 'services':
-        return <PricingSection t={t} />;
+        // pokud ServicesSection podporuje onOpenApp, můžeš předat openApp
+        return (
+          <ServicesSection
+            t={t}
+            embedded
+            onOpenApp={(aid: AppId) => openApp(aid)}
+            onOpenWeb={(url: string, title?: string) => openWebview(url, title)}
+          />
+        );
       case 'pricing':
         return <PricingSection t={t} />;
       case 'blog':
@@ -404,11 +426,25 @@ const DesktopSection: React.FC = () => {
           </div>
         );
       case 'terms':
-        return <div className="p-4">{t('terms.content')}</div>;
+        return <TermsSection t={t} />;
       case 'gdpr':
-        return <div className="p-4">{t('gdpr.content')}</div>;
-      default:
-        return null;
+        return <GDPRSection t={t} />;
+      case 'webview':
+        return (
+          <div className="w-full h-full bg-white">
+            {webviewUrl ? (
+              <iframe
+                title={webviewTitle || 'Browser'}
+                src={webviewUrl}
+                className="w-full h-full"
+                style={{ border: 0 }}
+              />
+            ) : (
+              <div className="p-4 text-sm text-gray-700">No URL loaded.</div>
+            )}
+          </div>
+        );
+      default: return null;
     }
   };
 
@@ -424,15 +460,14 @@ const DesktopSection: React.FC = () => {
         `,
         backgroundSize: '4px 4px',
         imageRendering: 'pixelated',
-        // touchAction: 'none' -> řeší Tailwind class `touch-none`
         userSelect: 'none',
         overscrollBehavior: 'none',
       }}
     >
       {/* Ikony */}
       {Object.entries(iconPos).map(([id, pos]) => {
-        const appId = id as AppId;
-        const { src } = iconMeta[appId];
+        const appId = id as IconAppId;
+        const src = iconMeta[appId].src;
         return (
           <DesktopIcon
             id={appId}
@@ -440,7 +475,7 @@ const DesktopSection: React.FC = () => {
             label={titles[appId]}
             x={pos.x}
             y={pos.y}
-            onOpen={openApp}
+            onOpen={(aid) => openApp(aid)}
             onMove={handleMoveIcon}
             src={src}
             desktopRef={desktopRef}
@@ -464,7 +499,6 @@ const DesktopSection: React.FC = () => {
         onMaximize={maximizeApp}
         renderContent={renderContent}
         onAboutFullscreenChange={(isFs) => {
-          // body scroll už je globálně zakázán; class nechávám pro jistotu
           document.body.classList.toggle('overflow-hidden', isFs);
         }}
         aboutFullscreenContent={<AboutSection t={t} onExit={() => closeApp('about')} />}

@@ -6,4 +6,5 @@ export type AppId =
   | 'blog'
   | 'contact'
   | 'terms'
-  | 'gdpr';
+  | 'gdpr'
+  | 'webview';

@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { X, Minus, Square } from 'lucide-react';
 
-export type AppId = 'about' | 'services' | 'pricing' | 'blog' | 'contact' | 'terms' | 'gdpr';
+import { AppId } from './types';
 
 type Titles = Record<AppId, string>;
 type WindowPos = Record<AppId, { left: number; top: number }>;
@@ -330,6 +330,7 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
     contact: { left: 380, top: 280 },
     terms: { left: 420, top: 160 },
     gdpr: { left: 460, top: 200 },
+    webview: { left: 500, top: 240 },
   }), []);
   const wpos = windowPos ?? defaultPos;
 
