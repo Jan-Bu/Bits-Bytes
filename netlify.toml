@@ -1,0 +1,4 @@
+# netlify.toml
+[[edge_functions]]
+path = "/proxy"
+function = "proxy"

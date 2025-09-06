@@ -194,10 +194,14 @@ const DesktopSection: React.FC = () => {
   const [webviewUrl, setWebviewUrl] = useState<string | null>(null);
   const [webviewTitle, setWebviewTitle] = useState<string>('Browser');
 
+  const PROXY = "/proxy"; // běží na stejné doméně
+
+  const proxify = (url: string) => `${PROXY}?url=${encodeURIComponent(url)}`;
+
   const openWebview = (url: string, title?: string) => {
-    setWebviewUrl(url);
+    setWebviewUrl(proxify(url));
     if (title) setWebviewTitle(title);
-    openApp('webview'); // otevře okno a přenese nahoru
+    openApp('webview');
   };
 
   // 🔒 Zákaz scrollu celé stránky (po dobu mountu komponenty)
