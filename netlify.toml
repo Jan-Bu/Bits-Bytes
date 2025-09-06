@@ -1,4 +1,17 @@
-# netlify.toml
+# Mapuj URL /proxy na edge funkci "proxy"
 [[edge_functions]]
 path = "/proxy"
 function = "proxy"
+
+# ⬇ pokud máš SPA fallback, MUSÍ být až za /proxy
+# (jinak ti to sežere /proxy a servíruje index.html)
+[[redirects]]
+from = "/proxy"
+to = "/.netlify/edge-functions/proxy"
+status = 200
+force = true
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
