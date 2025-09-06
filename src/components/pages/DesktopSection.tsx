@@ -194,7 +194,7 @@ const DesktopSection: React.FC = () => {
   const [webviewUrl, setWebviewUrl] = useState<string | null>(null);
   const [webviewTitle, setWebviewTitle] = useState<string>('Browser');
 
-  const PROXY = "/proxy"; // běží na stejné doméně
+  const PROXY = "/.netlify/edge-functions/proxy";
 
   const proxify = (url: string) => `${PROXY}?url=${encodeURIComponent(url)}`;
 

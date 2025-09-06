@@ -14,7 +14,7 @@ type Props = {
   embedded?: boolean;
   onRequestClose?: () => void;
   onOpenApp?: (id: AppId) => void;
-  onOpenWeb?: (url: string, title?: string) => void; // ← NOVÉ
+  onOpenWeb?: (url: string, title?: string) => void;
 };
 
 const NAV_BG = 'rgb(17 24 39)'; // Tailwind bg-gray-900 (#111827)
@@ -34,6 +34,20 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
   const h1BoxRef = useRef<HTMLSpanElement>(null);
   const ghostRef = useRef<HTMLSpanElement>(null);
   const [caretStartLeft, setCaretStartLeft] = useState<number | null>(null);
+
+  // 🔒 Vypnout horizontální scroll jen na této stránce
+  useEffect(() => {
+    const prevBody = document.body.style.overflowX;
+    const prevHtml = document.documentElement.style.overflowX;
+
+    document.body.style.overflowX = 'hidden';
+    document.documentElement.style.overflowX = 'hidden';
+
+    return () => {
+      document.body.style.overflowX = prevBody;
+      document.documentElement.style.overflowX = prevHtml;
+    };
+  }, []);
 
   // --- top navigation items (lokální sekce) ---
   const menuItems = [
@@ -136,22 +150,20 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
   const sectionPad = 'py-24 md:py-32';
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full overflow-x-hidden">
       {/* vnitřní scroller jen při embedded */}
       <div
         ref={scrollerRef}
-        className={embedded ? 'absolute inset-0 overflow-auto' : undefined}
+        className={embedded ? 'absolute inset-0 overflow-y-auto overflow-x-hidden' : undefined}
       >
         {/* 🔒 Lokální pozadí: jen uvnitř okna */}
-        <div className="relative min-h-full text-white">
+        <div className="relative min-h-full text-white overflow-x-hidden">
           <div
             className="pointer-events-none absolute inset-0 -z-10"
             style={{ backgroundColor: NAV_BG, backgroundImage: 'none' }}
           />
 
-          {/* ===== DOT-NAV OVERLAY – vždy uprostřed okna =====
-              Embed: sticky v rámci scrolleru; aby neovlivnil layout, wrapper má h-0
-              a vlastní obsah je absolutně vystrčený doprava. */}
+          {/* ===== DOT-NAV OVERLAY – vždy uprostřed okna ===== */}
           {embedded ? (
             <div className="sticky top-1/2 -translate-y-1/2 z-40 h-0">
               <div className="relative">
