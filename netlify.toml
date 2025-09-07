@@ -3,10 +3,10 @@
   publish = "dist"
 
 [[edge_functions]]
-  function = "proxy"   # jméno souboru bez přípony
-  path = "/proxy/*"    # veřejná cesta, na kterou bude funkce dostupná
+  function = "path-proxy"
+  path = "/p/*"
 
-# SPA fallback (React/Vite)
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"

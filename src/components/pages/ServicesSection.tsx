@@ -402,7 +402,7 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
                         if (!embedded || !onOpenWeb || !it.href) return;
                         e?.preventDefault?.();
                         e?.stopPropagation?.();
-                        onOpenWeb(it.href, it.title); // ← tohle ti otevře vnitřní okno
+                        onOpenWeb(it.href, it.title);
                       }}
                     />
                   ))}
