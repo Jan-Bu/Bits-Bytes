@@ -393,19 +393,20 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {showcaseItems.map((it, i) => (
-                    <RetroBrowserCard
-                      key={i}
-                      item={it}
-                      accent="green"
-                      onOpen={(e) => {
-                        if (!embedded || !onOpenWeb || !it.href) return;
-                        e?.preventDefault?.();
-                        e?.stopPropagation?.();
+                  {showcaseItems.map((it, i) => {
+                    const onOpen = (e: React.MouseEvent) => {
+                      if (embedded && onOpenWeb && it.href) {
+                        e.preventDefault();
+                        e.stopPropagation();
                         onOpenWeb(it.href, it.title);
-                      }}
-                    />
-                  ))}
+                      }
+                    };
+                    return (
+                      <div key={i} onClick={onOpen} onMouseDown={(e) => e.button === 1 && onOpen(e)}>
+                        <RetroBrowserCard item={it} accent="green" />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
