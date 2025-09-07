@@ -1,12 +1,12 @@
 [build]
   command = "npm run build"
-  publish = "dist"   # Vite default; pokud máš jinam, uprav
+  publish = "dist"
 
 [[edge_functions]]
-  function = "proxy"
-  path = "/proxy"
+  function = "proxy"   # jméno souboru bez přípony
+  path = "/proxy/*"    # veřejná cesta, na kterou bude funkce dostupná
 
-# (volitelné, ale běžné pro SPA)
+# SPA fallback (React/Vite)
 [[redirects]]
   from = "/*"
   to = "/index.html"

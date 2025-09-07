@@ -194,7 +194,9 @@ const DesktopSection: React.FC = () => {
   const [webviewUrl, setWebviewUrl] = useState<string | null>(null);
   const [webviewTitle, setWebviewTitle] = useState<string>('Browser');
 
-  const proxify = (raw: string) => `/proxy?url=${encodeURIComponent(raw)}`;
+  const proxify = (raw: string) =>
+    raw.startsWith('/proxy/?url=') ? raw : `/proxy/?url=${encodeURIComponent(raw)}`;
+
 
   const openWebview = (url: string, title?: string) => {
     setWebviewUrl(proxify(url));     // ← změna
