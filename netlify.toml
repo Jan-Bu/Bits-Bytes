@@ -1,16 +1,13 @@
-# Mapuj URL /proxy na edge funkci "proxy"
+[build]
+  command = "npm run build"
+  publish = "dist"   # Vite default; pokud máš jinam, uprav
+
 [[edge_functions]]
-path = "/proxy"
-function = "proxy"
+  function = "proxy"
+  path = "/proxy"
 
-# Pokud používáš SPA fallback, musí být AŽ za /proxy
+# (volitelné, ale běžné pro SPA)
 [[redirects]]
-from = "/proxy"
-to = "/.netlify/edge-functions/proxy"
-status = 200
-force = true
-
-[[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
+  from = "/*"
+  to = "/index.html"
+  status = 200

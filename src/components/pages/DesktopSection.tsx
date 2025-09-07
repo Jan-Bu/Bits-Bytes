@@ -194,12 +194,10 @@ const DesktopSection: React.FC = () => {
   const [webviewUrl, setWebviewUrl] = useState<string | null>(null);
   const [webviewTitle, setWebviewTitle] = useState<string>('Browser');
 
-  const PROXY = `${window.location.origin}/.netlify/edge-functions/proxy`;
-
-  const proxify = (url: string) => `${PROXY}?url=${encodeURIComponent(url)}`;
+  const proxify = (raw: string) => `/proxy?url=${encodeURIComponent(raw)}`;
 
   const openWebview = (url: string, title?: string) => {
-    setWebviewUrl(proxify(url));
+    setWebviewUrl(proxify(url));     // ← změna
     if (title) setWebviewTitle(title);
     openApp('webview');
   };
