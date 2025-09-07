@@ -195,10 +195,14 @@ const DesktopSection: React.FC = () => {
   const [webviewTitle, setWebviewTitle] = useState<string>('Browser');
 
   const proxify = (raw: string) => {
-  const u = new URL(raw);
-  const p = u.pathname || '/';
-  return `/p/h/${u.hostname}${p}${u.search}`;
-};
+    try {
+      const u = new URL(raw);
+      const p = u.pathname || "/";
+      return `/p/h/${u.hostname}${p}${u.search}`;
+    } catch {
+      return raw;
+    }
+  };
 
 
   const openWebview = (url: string, title?: string) => {
