@@ -13,23 +13,60 @@ export type ProjectItem = {
 type Props = {
   item: ProjectItem;
   accent?: Accent;
+  /** Klik na kartu (interní otevření ve webview) */
+  onOpen?: (e?: React.MouseEvent) => void;
 };
 
 /**
  * Stylizované „okno prohlížeče“ (bez iframu kvůli XFO).
  * - horní lišta s „• • •“, názvem a externím odkazem
  * - plátno s náhledem (img) nebo placeholder
+ * - pokud je předán onOpen, karta je celá klikací (a podporuje i prostřední tlačítko)
  */
-const RetroBrowserCard: React.FC<Props> = ({ item, accent = 'green' }) => {
+const RetroBrowserCard: React.FC<Props> = ({ item, accent = 'green', onOpen }) => {
   const a = accentPresets[accent];
+
+  const handleOpen = (e?: React.MouseEvent) => {
+    if (!onOpen || !item.href) return;
+    e?.preventDefault?.();
+    onOpen(e);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // podpora prostředního tlačítka (button === 1)
+    if (onOpen && item.href && e.button === 1) {
+      e.preventDefault();
+      onOpen(e);
+    }
+  };
+
+  const clickable = Boolean(onOpen && item.href);
 
   return (
     <article
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      aria-label={item.title}
+      onClick={clickable ? handleOpen : undefined}
+      onMouseDown={clickable ? handleMouseDown : undefined}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpen();
+              }
+            }
+          : undefined
+      }
       className={[
         'relative rounded-lg overflow-hidden bg-gray-900 border-2',
         a.border,
-        'shadow-lg transition-transform duration-300 hover:scale-[1.02]',
+        'shadow-lg transition-transform duration-300',
+        clickable ? 'hover:scale-[1.02] cursor-pointer' : '',
         a.hoverShadow,
+        'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900',
+        clickable ? a.ring : 'ring-transparent',
       ].join(' ')}
     >
       {/* Titlebar */}
@@ -56,8 +93,11 @@ const RetroBrowserCard: React.FC<Props> = ({ item, accent = 'green' }) => {
             href={item.href}
             target="_blank"
             rel="noreferrer"
+            // Důležité: nespouštět interní onOpen při kliknutí na externí ikonu
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             className={['p-1 rounded border', a.border, a.bgSoft, a.text, 'hover:opacity-90'].join(' ')}
-            aria-label={`Open ${item.title}`}
+            aria-label={`Open ${item.title} in new tab`}
             title={item.title}
           >
             <ExternalLink className="w-4 h-4" />
@@ -73,6 +113,7 @@ const RetroBrowserCard: React.FC<Props> = ({ item, accent = 'green' }) => {
             alt={item.title}
             className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
+            draggable={false}
           />
         ) : (
           <div
