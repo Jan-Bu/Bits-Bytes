@@ -413,18 +413,7 @@ const DesktopSection: React.FC = () => {
       case 'blog':
         return <div className="p-4">{t('blog.content')}</div>;
       case 'contact':
-        return (
-          <div className="p-4">
-            {t('contact.content')}
-            <button
-              onClick={() => navigate('/')}
-              className="mt-2 px-3 py-1 border border-black bg-[#bdbdbd] hover:bg-[#a0a0a0]"
-              style={{ boxShadow: `inset 1px 1px #7b7b7b, inset -1px -1px #ffffff` }}
-            >
-              ← {t('common.backToMain')}
-            </button>
-          </div>
-        );
+        return <ContactSection t={t} embedded />;
       case 'terms':
         return <TermsSection t={t} />;
       case 'gdpr':

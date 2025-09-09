@@ -122,7 +122,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({ t, embedded = true }) =
             </div>
 
             {/* Paleta barev */}
-            <div className="absolute top-1/4 sm:top-1/2 -translate-y-0 sm:-translate-y-1/2 left-[4px] sm:left-[8px] md:left-[12px] z-50">
+            <div className="absolute top-2 sm:top-1/2 sm:-translate-y-1/2 left-[4px] sm:left-[8px] md:left-[12px] z-50">
               <div
                 className="flex flex-col gap-[3px] sm:gap-[4px] border border-black px-[3px] py-[2px] bg-[#bdbdbd]"
                 style={{ boxShadow: "inset 1px 1px #fff, inset -1px -1px #7B7B7B" }}
