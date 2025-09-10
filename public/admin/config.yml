@@ -1,0 +1,50 @@
+backend:
+  name: git-gateway
+  branch: Hlavni
+
+media_folder: "public/uploads"
+public_folder: "/uploads"
+publish_mode: editorial_workflow
+
+collections:
+  - name: "blog_en"
+    label: "Blog (EN)"
+    format: "json"
+    delete: false
+    editor: { preview: false }
+    files:
+      - name: "en_blog"
+        label: "Items"
+        file: "src/data/i18n/en.blog.json"
+        fields:
+          - label: "Items"
+            name: "items"
+            widget: "list"
+            collapsed: false
+            fields:
+              - { label: "ID (slug)", name: "id", widget: "string" }
+              - { label: "Title", name: "title", widget: "string" }
+              - { label: "Date", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false }
+              - { label: "Category", name: "category", widget: "select", options: ["NEWS","WEBDESIGN","GRAPHICS","BRANDING","PRINT"] }
+              - { label: "Body", name: "body", widget: "text" }
+
+  - name: "blog_cs"
+    label: "Blog (CS)"
+    format: "json"
+    delete: false
+    editor: { preview: false }
+    files:
+      - name: "cs_blog"
+        label: "Položky"
+        file: "src/data/i18n/cs.blog.json"
+        fields:
+          - label: "Položky"
+            name: "items"
+            widget: "list"
+            collapsed: false
+            fields:
+              - { label: "ID (slug)", name: "id", widget: "string" }
+              - { label: "Název", name: "title", widget: "string" }
+              - { label: "Datum", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false }
+              - { label: "Kategorie", name: "category", widget: "select", options: ["NOVINKY","WEBDESIGN","GRAFIKA","BRANDING","TISK"] }
+              - { label: "Text", name: "body", widget: "text" }

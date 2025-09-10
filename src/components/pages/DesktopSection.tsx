@@ -411,7 +411,7 @@ const DesktopSection: React.FC = () => {
       case 'pricing':
         return <PricingSection t={t} />;
       case 'blog':
-        return <div className="p-4">{t('blog.content')}</div>;
+        return <BlogSection t={t} />;
       case 'contact':
         return <ContactSection t={t} embedded />;
       case 'terms':

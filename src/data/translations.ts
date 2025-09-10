@@ -1,4 +1,14 @@
+// src/data/translations.ts
+import enBlog from './i18n/en.blog.json';
+import csBlog from './i18n/cs.blog.json';
+
 import { Translations } from '../types';
+
+function mapBlogArrayToItems(arr: Array<any>) {
+  const out: Record<string, any> = {};
+  arr.forEach((post, idx) => { out[`i${idx + 1}`] = post; });
+  return out;
+}
 
 export const translations: Translations = {
   en: {
@@ -137,23 +147,27 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       text:
         "At our studio, you won’t find standard packages or fixed prices. Every project is unique and deserves an individual approach.\n\n We design websites, graphics, branding, and print materials fully tailored to your needs. Whether you’re looking for a simple website, a complete brand identity, or custom print solutions, we make sure everything fits your vision.\n\n Before we start, we always agree on the details, so you know exactly what to expect, with no unpleasant surprises.",
     },
-    blog: {
-      title: 'Latest Blog Posts',
-      post1: {
-        title: 'The Future of Web Design',
-        excerpt: 'Exploring upcoming trends and technologies shaping the digital landscape.',
-        date: 'March 15, 2025',
+    blog95: {
+      windowTitle: "Explorer – BLOG",
+      notepadTitle: "Notepad",
+      statusLine: "Line 1, Col 1 | Encoding: ANSI | Last modified:",
+      folders: "Folders",
+      readonly: "Read-only",
+      cat: {
+        news: "NEWS",
+        web: "WEBDESIGN",
+        graphics: "GRAPHICS",
+        brand: "BRANDING",
+        print: "PRINT",
+        all: "ALL",
       },
-      post2: {
-        title: 'Retro Gaming UI in Modern Web',
-        excerpt: 'How to incorporate nostalgic gaming elements into contemporary web design.',
-        date: 'March 10, 2025',
+      col: {
+        name: "Name",
+        modified: "Modified",
+        category: "Category",
       },
-      post3: {
-        title: 'Performance Optimization Tips',
-        excerpt: 'Essential techniques to make your website lightning fast.',
-        date: 'March 5, 2025',
-      },
+      empty: "No posts in this folder.",
+      items: mapBlogArrayToItems(enBlog.items),
     },
     contact: {
       title: 'Contact',
@@ -597,23 +611,27 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
       text:
         'U nás nenajdete univerzální balíčky ani pevné ceny. Každý projekt je unikátní a zaslouží si individuální přístup.\n\n Navrhujeme weby, grafiku, branding i tiskové materiály přesně na míru vašim potřebám. Ať hledáte jednoduchý web, kompletní identitu, nebo tiskové řešení, postaráme se, aby vše sedělo vaší vizi.\n\n Ještě před začátkem si vyjasníme detaily, abyste přesně věděli, co dostanete — bez nepříjemných překvapení.',
     },
-    blog: {
-      title: 'Nejnovější příspěvky',
-      post1: {
-        title: 'Budoucnost webového designu',
-        excerpt: 'Zkoumání nadcházejících trendů a technologií, které formují digitální prostředí.',
-        date: '15. března 2025',
+    blog95: {
+      windowTitle: "Průzkumník – BLOG",
+      notepadTitle: "Poznámkový blok",
+      statusLine: "Řádek 1, Sloupec 1 | Kódování: ANSI | Naposledy změněno:",
+      folders: "Složky",
+      readonly: "Jen pro čtení",
+      cat: {
+        news: "NOVINKY",
+        web: "WEBDESIGN",
+        graphics: "GRAFIKA",
+        brand: "BRANDING",
+        print: "TISK",
+        all: "VŠE",
       },
-      post2: {
-        title: 'Retro herní UI v moderním webu',
-        excerpt: 'Jak začlenit nostalgické herní prvky do současného webového designu.',
-        date: '10. března 2025',
+      col: {
+        name: "Název",
+        modified: "Datum změny",
+        category: "Kategorie",
       },
-      post3: {
-        title: 'Tipy pro optimalizaci výkonu',
-        excerpt: 'Základní techniky pro vytvoření bleskově rychlých webových stránek.',
-        date: '5. března 2025',
-      },
+      empty: "Žádné články v této složce.",
+      items: mapBlogArrayToItems(csBlog.items),
     },
     contact: {
       title: 'Kontakt',

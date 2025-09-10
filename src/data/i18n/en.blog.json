@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "id": "hello-1999",
+      "title": "FIRST-ENTRY.TXT",
+      "date": "1999-08-28",
+      "category": "NEWS",
+      "body": "Hello world!\n\nThis is our retro blog in Windows 95 style.\nPlain, readable, without unnecessary layers.\n\n— Bits&Bytes"
+    }
+  ]
+}
