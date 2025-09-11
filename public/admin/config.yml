@@ -1,3 +1,4 @@
+# /public/admin/config.yml
 backend:
   name: github
   repo: Jan-Bu/Bits-Bytes
@@ -13,13 +14,16 @@ collections:
   - name: "blog_cs"
     label: "Blog (CS)"
     format: "json"
+    editor: { preview: false }
     files:
       - name: "cs_blog"
+        label: "Položky"
         file: "src/data/i18n/cs.blog.json"
         fields:
           - label: "Položky"
             name: "items"
             widget: "list"
+            collapsed: false
             fields:
               - { label: "ID (slug)", name: "id", widget: "string" }
               - { label: "Název", name: "title", widget: "string" }
@@ -30,13 +34,16 @@ collections:
   - name: "blog_en"
     label: "Blog (EN)"
     format: "json"
+    editor: { preview: false }
     files:
       - name: "en_blog"
+        label: "Items"
         file: "src/data/i18n/en.blog.json"
         fields:
           - label: "Items"
             name: "items"
             widget: "list"
+            collapsed: false
             fields:
               - { label: "ID (slug)", name: "id", widget: "string" }
               - { label: "Title", name: "title", widget: "string" }
