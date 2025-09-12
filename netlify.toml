@@ -5,22 +5,37 @@
 [functions]
   directory = "netlify/functions"
 
-# SPA fallback (pokud máš Vite/React Router)
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Povol CORS pro OAuth callback → CMS popup
+# CORS pro OAuth funkci
 [[headers]]
   for = "/.netlify/functions/oauth/*"
   [headers.values]
-    Access-Control-Allow-Origin = "${SITE_URL}"
+    Access-Control-Allow-Origin = "https://bits-bytes.netlify.app" # ← nahraď vlastní doménou, pokud máš
     Access-Control-Allow-Credentials = "true"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
 
-# Bezpečnostní hlavičky (volitelné, ponecháme jednoduché)
+# Základní security
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
+
+# === MUSÍ BÝT POSLEDNÍ, aby přepsal globální CSP ===
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://unpkg.com;
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data:;
+      connect-src 'self' https://api.github.com https://github.com https://unpkg.com https://bits-bytes.netlify.app;
+      frame-ancestors 'self';
+    """

@@ -1,21 +1,79 @@
 <!doctype html>
-<html>
+<html lang="cs">
   <head>
     <meta charset="utf-8" />
     <meta name="robots" content="noindex" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Admin</title>
+
+    <!-- DŮLEŽITÉ: CMS se nespustí automaticky, nastavíme manuální init -->
+    <script>window.CMS_MANUAL_INIT = true;</script>
+
+    <!-- Decap CMS bundle -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </head>
   <body>
     <script>
-      // Příjem GitHub tokenu z OAuth callback okna
-      window.addEventListener("message", (e) => {
-        if (e.origin !== window.location.origin) return;
-        if (e.data && e.data.type === "github_token") {
-          // Decap si token načte přes backend; tohle je jen pro debug.
-          console.log("GitHub token OK");
-        }
-      });
+      // Minimal config přímo v HTML – žádné /admin/config.yml už netřeba
+      const cmsConfig = {
+        backend: {
+          name: "github",
+          repo: "https://github.com/Jan-Bu/Bits-Bytes",           // ← UPRAV
+          branch: "Hlavni",
+          base_url: "/.netlify/functions/oauth", // náš OAuth bridge
+          auth_endpoint: "start"
+        },
+        media_folder: "public/uploads",
+        public_folder: "/uploads",
+        locale: "cs",
+        collections: [
+          {
+            name: "blog_cs",
+            label: "Blog (česky)",
+            format: "json",
+            delete: false,
+            editor: { preview: false },
+            files: [
+              {
+                name: "cs_blog",
+                label: "cs.blog.json",
+                file: "src/data/i18n/cs.blog.json",
+                fields: [
+                  { label: "ID", name: "id", widget: "string", required: false },
+                  { label: "Název (soubor)", name: "title", widget: "string" },
+                  { label: "Datum", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false },
+                  { label: "Kategorie", name: "category", widget: "string" },
+                  { label: "Text", name: "body", widget: "text" }
+                ]
+              }
+            ]
+          },
+          {
+            name: "blog_en",
+            label: "Blog (English)",
+            format: "json",
+            delete: false,
+            editor: { preview: false },
+            files: [
+              {
+                name: "en_blog",
+                label: "en.blog.json",
+                file: "src/data/i18n/en.blog.json",
+                fields: [
+                  { label: "ID", name: "id", widget: "string", required: false },
+                  { label: "Title (filename)", name: "title", widget: "string" },
+                  { label: "Date", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false },
+                  { label: "Category", name: "category", widget: "string" },
+                  { label: "Body", name: "body", widget: "text" }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      // Spustíme CMS
+      window.CMS.init({ config: cmsConfig });
     </script>
   </body>
 </html>
