@@ -79,7 +79,7 @@ export const handler: Handler = async (event) => {
     return redirect(gh);
   }
 
-  // /callback → vyměň code→token a pošli všechny varianty zprávy
+  // /callback → vyměň code→token a pošli přesný formát, který Decap očekává
   if (path.endsWith("/callback")) {
     const code = event.queryStringParameters?.code;
     if (!code) return redirect(`${SITE_URL}/.netlify/functions/oauth/start`);
@@ -103,32 +103,14 @@ export const handler: Handler = async (event) => {
 </script>`);
     }
 
-    // Pošleme 3 varianty, které různé verze Decap/Netlify CMS přijímají
+    // ➜ jediná zpráva, kterou pošleme (text + JSON s tokenem i providerem)
+    const payload = JSON.stringify({ token, provider: "github" });
     return html(`<!doctype html><meta charset="utf-8">
 <script>
   (function(){
-    var t = ${JSON.stringify(token)};
-    var parentOrigin = ${JSON.stringify(SITE_URL)}; // stejné jako okno adminu
-
-    // 1) starší/častý formát
-    var msg1 = 'authorization:github:success:' + t;
-    // 2) formát s JSONem
-    var msg2 = 'authorization:github:success:' + JSON.stringify({ token: t });
-    // 3) objekt – pro případ debug listeneru
-    var msg3 = { type: 'authorization:github:success', provider: 'github', token: t };
-
-    if (window.opener) {
-      try { window.opener.postMessage(msg1, parentOrigin); } catch(e) {}
-      try { window.opener.postMessage(msg2, parentOrigin); } catch(e) {}
-      try { window.opener.postMessage(msg3, parentOrigin); } catch(e) {}
-      // pro jistotu i s wildcard
-      try { window.opener.postMessage(msg1, '*'); } catch(e) {}
-      try { window.opener.postMessage(msg2, '*'); } catch(e) {}
-      try { window.opener.postMessage(msg3, '*'); } catch(e) {}
-      window.close();
-    } else {
-      document.body.textContent = "Token received. You can close this window.";
-    }
+    var msg = 'authorization:github:success:' + ${JSON.stringify(payload)};
+    try { window.opener && window.opener.postMessage(msg, '*'); } catch(e) {}
+    window.close();
   })();
 </script>`);
   }
@@ -145,9 +127,9 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code }),
     });
     const j = await r.json();
-    const token = (j as any)?.access_token;
-    if (!token) return json(j, 400, allowOrigin);
-    return json({ token }, 200, allowOrigin);
+    const tok = (j as any)?.access_token;
+    if (!tok) return json(j, 400, allowOrigin);
+    return json({ token: tok }, 200, allowOrigin);
   }
 
   return { statusCode: 404, body: "Not found" };
