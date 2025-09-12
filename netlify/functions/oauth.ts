@@ -79,7 +79,7 @@ export const handler: Handler = async (event) => {
     return redirect(gh);
   }
 
-  // /callback → vyměň code→token a pošli přesný formát, který Decap očekává
+  // /callback → výměna code→token a JEDINÁ zpráva, kterou Decap očekává
   if (path.endsWith("/callback")) {
     const code = event.queryStringParameters?.code;
     if (!code) return redirect(`${SITE_URL}/.netlify/functions/oauth/start`);
@@ -97,39 +97,21 @@ export const handler: Handler = async (event) => {
 <script>
   (function(){
     var msg = 'authorization:github:error:' + ${JSON.stringify(JSON.stringify(j))};
-    if (window.opener) { window.opener.postMessage(msg, '*'); window.close(); }
-    else { document.body.textContent = 'OAuth exchange failed.'; }
+    try { window.opener && window.opener.postMessage(msg, ${JSON.stringify(SITE_URL)}); } catch(e) {}
+    window.close();
   })();
 </script>`);
     }
 
-    // ➜ jediná zpráva, kterou pošleme (text + JSON s tokenem i providerem)
-    const payload = JSON.stringify({ token, provider: "github" });
+    // ⬇️ přesně tohle Decap bere
     return html(`<!doctype html><meta charset="utf-8">
 <script>
   (function(){
-    var msg = 'authorization:github:success:' + ${JSON.stringify(payload)};
-    try { window.opener && window.opener.postMessage(msg, '*'); } catch(e) {}
+    var msg = 'authorization:github:success:' + ${JSON.stringify(token)};
+    try { window.opener && window.opener.postMessage(msg, ${JSON.stringify(SITE_URL)}); } catch(e) {}
     window.close();
   })();
 </script>`);
-  }
-
-  // /token → XHR fallback
-  if (path.endsWith("/token")) {
-    const body = event.body ? JSON.parse(event.body) : {};
-    const code = body?.code;
-    if (!code) return json({ error: "Missing code" }, 400, allowOrigin);
-
-    const r = await fetch("https://github.com/login/oauth/access_token", {
-      method: "POST",
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code }),
-    });
-    const j = await r.json();
-    const tok = (j as any)?.access_token;
-    if (!tok) return json(j, 400, allowOrigin);
-    return json({ token: tok }, 200, allowOrigin);
   }
 
   return { statusCode: 404, body: "Not found" };
