@@ -1,6 +1,6 @@
-import type { Handler, HandlerEvent } from "@netlify/functions";
+import type { Handler, HandlerEvent, HandlerResponse } from "@netlify/functions";
 
-/** Dopotítá URL webu ze záhlaví (funguje i bez env SITE_URL) */
+/** Spočítá base URL (funguje i bez env SITE_URL) */
 function getSiteUrl(event: HandlerEvent): string {
   const envUrl = process.env.SITE_URL;
   if (envUrl) return envUrl.replace(/\/+$/, "");
@@ -9,10 +9,10 @@ function getSiteUrl(event: HandlerEvent): string {
   return `${proto}://${host}`;
 }
 
-function html(body: string) {
+function html(body: string): HandlerResponse {
   return { statusCode: 200, headers: { "Content-Type": "text/html; charset=utf-8" }, body };
 }
-function json(data: unknown, statusCode = 200, allowOrigin = "*") {
+function json(data: unknown, statusCode = 200, allowOrigin = "*"): HandlerResponse {
   return {
     statusCode,
     headers: {
@@ -22,6 +22,9 @@ function json(data: unknown, statusCode = 200, allowOrigin = "*") {
     },
     body: JSON.stringify(data),
   };
+}
+function redirect(location: string): HandlerResponse {
+  return { statusCode: 302, headers: { Location: location }, body: "" };
 }
 
 export const handler: Handler = async (event) => {
@@ -35,19 +38,16 @@ export const handler: Handler = async (event) => {
 
   // CORS preflight
   if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 204,
-      headers: {
-        "Access-Control-Allow-Origin": allowOrigin,
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-      },
-      body: "",
+    const headers: Record<string, string> = {
+      "Access-Control-Allow-Origin": allowOrigin,
+      "Access-Control-Allow-Credentials": "true",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     };
+    return { statusCode: 204, headers, body: "" };
   }
 
-  // rychlý debug end-point
+  // Debug
   if (path.endsWith("/debug")) {
     return json(
       {
@@ -76,26 +76,15 @@ export const handler: Handler = async (event) => {
       `?client_id=${encodeURIComponent(CLIENT_ID)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=repo,user:email`;
-
-    return {
-      statusCode: 302,
-      headers: { Location: gh },
-      body: "",
-    };
+    return redirect(gh);
   }
 
-  // /callback → výměna code→token a poslání do opener okna
+  // /callback → výměna code→token a hláška, kterou Decap očekává
   if (path.endsWith("/callback")) {
     const code = event.queryStringParameters?.code;
 
-    // Když někdo otevře /callback ručně bez ?code, pošli ho na start
     if (!code) {
-      const startUrl = `${SITE_URL}/.netlify/functions/oauth/start`;
-      return {
-        statusCode: 302,
-        headers: { Location: startUrl },
-        body: "",
-      };
+      return redirect(`${SITE_URL}/.netlify/functions/oauth/start`);
     }
 
     const r = await fetch("https://github.com/login/oauth/access_token", {
@@ -105,23 +94,30 @@ export const handler: Handler = async (event) => {
     });
     const j = await r.json();
     const token = (j as any)?.access_token as string | undefined;
-    if (!token) return html(`OAuth exchange failed: ${JSON.stringify(j)}`);
 
+    if (!token) {
+      return html(`<!doctype html><meta charset="utf-8">
+<script>
+  (function(){
+    var msg = 'authorization:github:error:' + ${JSON.stringify(JSON.stringify(j))};
+    if (window.opener) { window.opener.postMessage(msg, '*'); window.close(); }
+    else { document.body.textContent = 'OAuth exchange failed.'; }
+  })();
+</script>`);
+    }
+
+    // Decap CMS čeká přesně 'authorization:github:success:<TOKEN>'
     return html(`<!doctype html><meta charset="utf-8">
 <script>
   (function(){
-    var token=${JSON.stringify(token)};
-    if (window.opener) {
-      window.opener.postMessage({ type: "github_token", token }, ${JSON.stringify(SITE_URL)});
-      window.close();
-    } else {
-      document.body.textContent = "GitHub token obtained. You can close this window.";
-    }
+    var msg = 'authorization:github:success:' + ${JSON.stringify(token)};
+    if (window.opener) { window.opener.postMessage(msg, '*'); window.close(); }
+    else { document.body.textContent = "Token received. You can close this window."; }
   })();
 </script>`);
   }
 
-  // /token → XHR fallback (nepoužíváme, ale nechávám)
+  // /token → XHR fallback
   if (path.endsWith("/token")) {
     const body = event.body ? JSON.parse(event.body) : {};
     const code = body?.code;
