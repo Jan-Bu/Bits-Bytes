@@ -1,6 +1,6 @@
 import type { Handler, HandlerEvent } from "@netlify/functions";
 
-/** dopočítá URL webu ze záhlaví (funguje i bez env SITE_URL) */
+/** Dopotítá URL webu ze záhlaví (funguje i bez env SITE_URL) */
 function getSiteUrl(event: HandlerEvent): string {
   const envUrl = process.env.SITE_URL;
   if (envUrl) return envUrl.replace(/\/+$/, "");
@@ -68,7 +68,7 @@ export const handler: Handler = async (event) => {
     return json({ error: "Missing env: GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET" }, 500, allowOrigin);
   }
 
-  // /start → redirect na GitHub
+  // /start → 302 redirect na GitHub OAuth
   if (path.endsWith("/start")) {
     const redirectUri = `${SITE_URL}/.netlify/functions/oauth/callback`;
     const gh =
@@ -76,14 +76,27 @@ export const handler: Handler = async (event) => {
       `?client_id=${encodeURIComponent(CLIENT_ID)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=repo,user:email`;
-    return html(`<!doctype html><meta charset="utf-8">
-<script>location.replace(${JSON.stringify(gh)});</script>`);
+
+    return {
+      statusCode: 302,
+      headers: { Location: gh },
+      body: "",
+    };
   }
 
   // /callback → výměna code→token a poslání do opener okna
   if (path.endsWith("/callback")) {
     const code = event.queryStringParameters?.code;
-    if (!code) return html("Missing ?code");
+
+    // Když někdo otevře /callback ručně bez ?code, pošli ho na start
+    if (!code) {
+      const startUrl = `${SITE_URL}/.netlify/functions/oauth/start`;
+      return {
+        statusCode: 302,
+        headers: { Location: startUrl },
+        body: "",
+      };
+    }
 
     const r = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
