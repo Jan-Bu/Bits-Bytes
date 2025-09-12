@@ -1,79 +1,88 @@
 <!doctype html>
 <html lang="cs">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="robots" content="noindex" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Admin</title>
-    <!-- 1) MANUAL INIT MUSÍ být před bundlem -->
-    <script>window.CMS_MANUAL_INIT = true;</script>
-    <!-- 2) Decap bundle -->
-    <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
-  </head>
-  <body>
-    <!-- 3) Kořenový uzel pro app -->
-    <div id="nc-root"></div>
 
-    <!-- 4) Ruční konfigurace -->
-    <script>
-      const cmsConfig = {
-        backend: {
-          name: "github",
-          repo: "https://github.com/Jan-Bu/Bits-Bytes",   // ← UPRAV na skutečné owner/repo
-          branch: "Hlavni",
-          base_url: "/.netlify/functions/oauth",
-          auth_endpoint: "start",
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin</title>
+  <!-- 1) MANUAL INIT MUSÍ být před bundlem -->
+  <script>window.CMS_MANUAL_INIT = true;</script>
+  <!-- 2) Decap bundle -->
+  <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
+</head>
+
+<body>
+  <!-- 3) Kořenový uzel pro app -->
+  <div id="nc-root"></div>
+
+  <!-- 4) Ruční konfigurace -->
+  <script>
+    const cmsConfig = {
+      backend: {
+        name: "github",
+        repo: "https://github.com/Jan-Bu/Bits-Bytes",   // ← UPRAV na skutečné owner/repo
+        branch: "Hlavni",
+        base_url: "/.netlify/functions/oauth",
+        auth_endpoint: "start",
+      },
+      media_folder: "public/uploads",
+      public_folder: "/uploads",
+      locale: "cs",
+      collections: [
+        {
+          name: "blog_cs",
+          label: "Blog (česky)",
+          format: "json",
+          delete: false,
+          editor: { preview: false },
+          files: [
+            {
+              name: "cs_blog",
+              label: "cs.blog.json",
+              file: "src/data/i18n/cs.blog.json",
+              fields: [
+                { label: "ID", name: "id", widget: "string", required: false },
+                { label: "Název (soubor)", name: "title", widget: "string" },
+                { label: "Datum", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false },
+                { label: "Kategorie", name: "category", widget: "string" },
+                { label: "Text", name: "body", widget: "text" }
+              ]
+            }
+          ]
         },
-        media_folder: "public/uploads",
-        public_folder: "/uploads",
-        locale: "cs",
-        collections: [
-          {
-            name: "blog_cs",
-            label: "Blog (česky)",
-            format: "json",
-            delete: false,
-            editor: { preview: false },
-            files: [
-              {
-                name: "cs_blog",
-                label: "cs.blog.json",
-                file: "src/data/i18n/cs.blog.json",
-                fields: [
-                  { label: "ID", name: "id", widget: "string", required: false },
-                  { label: "Název (soubor)", name: "title", widget: "string" },
-                  { label: "Datum", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false },
-                  { label: "Kategorie", name: "category", widget: "string" },
-                  { label: "Text", name: "body", widget: "text" }
-                ]
-              }
-            ]
-          },
-          {
-            name: "blog_en",
-            label: "Blog (English)",
-            format: "json",
-            delete: false,
-            editor: { preview: false },
-            files: [
-              {
-                name: "en_blog",
-                label: "en.blog.json",
-                file: "src/data/i18n/en.blog.json",
-                fields: [
-                  { label: "ID", name: "id", widget: "string", required: false },
-                  { label: "Title", name: "title", widget: "string" },
-                  { label: "Date", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false },
-                  { label: "Category", name: "category", widget: "string" },
-                  { label: "Body", name: "body", widget: "text" }
-                ]
-              }
-            ]
-          }
-        ]
-      };
+        {
+          name: "blog_en",
+          label: "Blog (English)",
+          format: "json",
+          delete: false,
+          editor: { preview: false },
+          files: [
+            {
+              name: "en_blog",
+              label: "en.blog.json",
+              file: "src/data/i18n/en.blog.json",
+              fields: [
+                { label: "ID", name: "id", widget: "string", required: false },
+                { label: "Title", name: "title", widget: "string" },
+                { label: "Date", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false },
+                { label: "Category", name: "category", widget: "string" },
+                { label: "Body", name: "body", widget: "text" }
+              ]
+            }
+          ]
+        }
+      ]
+    };
 
-      window.CMS.init({ config: cmsConfig });
-    </script>
-  </body>
+    window.CMS.init({ config: cmsConfig });
+  </script>
+  <script>
+    window.addEventListener('message', (e) => {
+      // uvidíš to v konzoli /admin
+      console.log('[admin] postMessage:', e.origin, e.data);
+    });
+  </script>
+</body>
+
 </html>

@@ -1,6 +1,6 @@
 import type { Handler, HandlerEvent, HandlerResponse } from "@netlify/functions";
 
-/** Spočítá base URL (funguje i bez env SITE_URL) */
+/** Base URL i bez SITE_URL env */
 function getSiteUrl(event: HandlerEvent): string {
   const envUrl = process.env.SITE_URL;
   if (envUrl) return envUrl.replace(/\/+$/, "");
@@ -68,7 +68,7 @@ export const handler: Handler = async (event) => {
     return json({ error: "Missing env: GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET" }, 500, allowOrigin);
   }
 
-  // /start → 302 redirect na GitHub OAuth
+  // /start → 302 redirect na GitHub
   if (path.endsWith("/start")) {
     const redirectUri = `${SITE_URL}/.netlify/functions/oauth/callback`;
     const gh =
@@ -79,13 +79,10 @@ export const handler: Handler = async (event) => {
     return redirect(gh);
   }
 
-  // /callback → výměna code→token a hláška, kterou Decap očekává
+  // /callback → vyměň code→token a pošli všechny varianty zprávy
   if (path.endsWith("/callback")) {
     const code = event.queryStringParameters?.code;
-
-    if (!code) {
-      return redirect(`${SITE_URL}/.netlify/functions/oauth/start`);
-    }
+    if (!code) return redirect(`${SITE_URL}/.netlify/functions/oauth/start`);
 
     const r = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
@@ -106,13 +103,32 @@ export const handler: Handler = async (event) => {
 </script>`);
     }
 
-    // Decap CMS čeká přesně 'authorization:github:success:<TOKEN>'
+    // Pošleme 3 varianty, které různé verze Decap/Netlify CMS přijímají
     return html(`<!doctype html><meta charset="utf-8">
 <script>
   (function(){
-    var msg = 'authorization:github:success:' + ${JSON.stringify(token)};
-    if (window.opener) { window.opener.postMessage(msg, '*'); window.close(); }
-    else { document.body.textContent = "Token received. You can close this window."; }
+    var t = ${JSON.stringify(token)};
+    var parentOrigin = ${JSON.stringify(SITE_URL)}; // stejné jako okno adminu
+
+    // 1) starší/častý formát
+    var msg1 = 'authorization:github:success:' + t;
+    // 2) formát s JSONem
+    var msg2 = 'authorization:github:success:' + JSON.stringify({ token: t });
+    // 3) objekt – pro případ debug listeneru
+    var msg3 = { type: 'authorization:github:success', provider: 'github', token: t };
+
+    if (window.opener) {
+      try { window.opener.postMessage(msg1, parentOrigin); } catch(e) {}
+      try { window.opener.postMessage(msg2, parentOrigin); } catch(e) {}
+      try { window.opener.postMessage(msg3, parentOrigin); } catch(e) {}
+      // pro jistotu i s wildcard
+      try { window.opener.postMessage(msg1, '*'); } catch(e) {}
+      try { window.opener.postMessage(msg2, '*'); } catch(e) {}
+      try { window.opener.postMessage(msg3, '*'); } catch(e) {}
+      window.close();
+    } else {
+      document.body.textContent = "Token received. You can close this window.";
+    }
   })();
 </script>`);
   }
