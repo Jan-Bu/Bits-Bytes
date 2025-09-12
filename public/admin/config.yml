@@ -1,52 +1,54 @@
-# /public/admin/config.yml
 backend:
   name: github
-  repo: Jan-Bu/Bits-Bytes
-  branch: Hlavni
-  base_url: "https://bits-bytes.netlify.app/.netlify/functions/oauth"
-  auth_endpoint: "authorize"
+  repo: tvoje-org/tvuj-repo # ← uprav
+  branch: main             # ← uprav
+  base_url: /.netlify/functions/oauth
+  auth_endpoint: start     # => /.netlify/functions/oauth/start
 
 media_folder: "public/uploads"
 public_folder: "/uploads"
-publish_mode: editorial_workflow
 
 collections:
   - name: "blog_cs"
-    label: "Blog (CS)"
+    label: "Blog (česky)"
     format: "json"
-    editor: { preview: false }
+    delete: false
+    editor:
+      preview: false
     files:
       - name: "cs_blog"
-        label: "Položky"
+        label: "cs.blog.json"
         file: "src/data/i18n/cs.blog.json"
         fields:
-          - label: "Položky"
+          - label: "Příspěvky"
             name: "items"
             widget: "list"
-            collapsed: false
+            summary: "{{fields.title}} ({{fields.date}})"
             fields:
-              - { label: "ID (slug)", name: "id", widget: "string" }
-              - { label: "Název", name: "title", widget: "string" }
+              - { label: "ID", name: "id", widget: "string", required: false }
+              - { label: "Název (soubor)", name: "title", widget: "string" }
               - { label: "Datum", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false }
-              - { label: "Kategorie", name: "category", widget: "select", options: ["NOVINKY","WEBDESIGN","GRAFIKA","BRANDING","TISK"] }
+              - { label: "Kategorie", name: "category", widget: "string" }
               - { label: "Text", name: "body", widget: "text" }
 
   - name: "blog_en"
-    label: "Blog (EN)"
+    label: "Blog (English)"
     format: "json"
-    editor: { preview: false }
+    delete: false
+    editor:
+      preview: false
     files:
       - name: "en_blog"
-        label: "Items"
+        label: "en.blog.json"
         file: "src/data/i18n/en.blog.json"
         fields:
-          - label: "Items"
+          - label: "Posts"
             name: "items"
             widget: "list"
-            collapsed: false
+            summary: "{{fields.title}} ({{fields.date}})"
             fields:
-              - { label: "ID (slug)", name: "id", widget: "string" }
-              - { label: "Title", name: "title", widget: "string" }
+              - { label: "ID", name: "id", widget: "string", required: false }
+              - { label: "Title (filename)", name: "title", widget: "string" }
               - { label: "Date", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false }
-              - { label: "Category", name: "category", widget: "select", options: ["NEWS","WEBDESIGN","GRAPHICS","BRANDING","PRINT"] }
+              - { label: "Category", name: "category", widget: "string" }
               - { label: "Body", name: "body", widget: "text" }

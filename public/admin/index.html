@@ -2,10 +2,20 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Content Manager</title>
     <meta name="robots" content="noindex" />
+    <title>Admin</title>
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </head>
   <body>
-    <script src="https://unpkg.com/decap-cms@3.3.1/dist/decap-cms.js"></script>
+    <script>
+      // Příjem GitHub tokenu z OAuth callback okna
+      window.addEventListener("message", (e) => {
+        if (e.origin !== window.location.origin) return;
+        if (e.data && e.data.type === "github_token") {
+          // Decap si token načte přes backend; tohle je jen pro debug.
+          console.log("GitHub token OK");
+        }
+      });
+    </script>
   </body>
 </html>

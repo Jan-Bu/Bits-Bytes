@@ -1,2 +1,26 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
 [functions]
-directory = "netlify/functions"
+  directory = "netlify/functions"
+
+# SPA fallback (pokud máš Vite/React Router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Povol CORS pro OAuth callback → CMS popup
+[[headers]]
+  for = "/.netlify/functions/oauth/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "${SITE_URL}"
+    Access-Control-Allow-Credentials = "true"
+
+# Bezpečnostní hlavičky (volitelné, ponecháme jednoduché)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
