@@ -1,5 +1,5 @@
 // netlify/functions/oauth.js
-// GitHub OAuth bridge for Decap CMS
+// GitHub OAuth bridge for Decap CMS (robustní posílání zprávy)
 
 const SITE_URL = process.env.URL || "https://bits-bytes.netlify.app";
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
@@ -8,7 +8,6 @@ const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 exports.handler = async (event) => {
   const path = event.path || "";
 
-  // 1) Start OAuth – pošleme JS redirect na GitHub autorizaci
   if (path.endsWith("/authorize")) {
     const redirectUri = `${SITE_URL}/.netlify/functions/oauth/callback`;
     const gh =
@@ -25,7 +24,6 @@ exports.handler = async (event) => {
     };
   }
 
-  // 2) Callback – vyměníme code -> access_token a pošleme ho zpět do /admin
   if (path.endsWith("/callback")) {
     const code = event.queryStringParameters?.code;
     if (!code) return { statusCode: 400, body: "Missing code" };
@@ -50,27 +48,36 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: { "Content-Type": "text/html" },
         body: `<!doctype html><meta charset="utf-8">
+<pre style="font:14px/1.4 monospace;padding:16px">OAuth error.
+${payloadErr}
+Okno se zavře za 2 s…</pre>
 <script>
   try { window.opener && window.opener.postMessage(${JSON.stringify(payloadErr)}, "*"); } catch(e) {}
-  window.close();
+  setTimeout(function(){ try{ window.close(); }catch(e){} }, 2000);
 </script>`,
       };
     }
 
-    // ⬇️ Pošleme obě varianty (plain i JSON), aby si to Decap vždy převzal
-    const payloadPlain =
-      "authorization:github:success:" + data.access_token;
-    const payloadJson =
-      "authorization:github:success:" + JSON.stringify({ token: data.access_token });
+    const payloadPlain = "authorization:github:success:" + data.access_token;
+    const payloadJson  = "authorization:github:success:" + JSON.stringify({ token: data.access_token });
 
     return {
       statusCode: 200,
       headers: { "Content-Type": "text/html" },
       body: `<!doctype html><meta charset="utf-8">
+<pre style="font:14px/1.4 monospace;padding:16px">
+Callback OK – posílám token do /admin…
+(Okno se zavře za 2 s.)</pre>
 <script>
-  try { window.opener && window.opener.postMessage(${JSON.stringify(payloadPlain)}, "*"); } catch(e) {}
-  try { window.opener && window.opener.postMessage(${JSON.stringify(payloadJson)}, "*"); } catch(e) {}
-  window.close();
+  function sendAll(){
+    try { window.opener && window.opener.postMessage(${JSON.stringify(payloadPlain)}, "*"); } catch(e) {}
+    try { window.opener && window.opener.postMessage(${JSON.stringify(payloadJson)},  "*"); } catch(e) {}
+  }
+  // pošli hned, pak za 300 ms a 1000 ms
+  sendAll();
+  setTimeout(sendAll, 300);
+  setTimeout(sendAll, 1000);
+  setTimeout(function(){ try{ window.close(); }catch(e){} }, 2000);
 </script>`,
     };
   }
