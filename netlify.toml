@@ -5,6 +5,12 @@
 [functions]
   directory = "netlify/functions"
 
+[[redirects]]
+  from = "/admin/config.yml"
+  to = "/admin/config.yml"
+  status = 200
+
+
 # SPA fallback
 [[redirects]]
   from = "/*"

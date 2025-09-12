@@ -5,21 +5,21 @@
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Admin</title>
-    <!-- 1) MANUAL_INIT musí být PŘED bundlem -->
+    <!-- 1) MANUAL INIT MUSÍ být před bundlem -->
     <script>window.CMS_MANUAL_INIT = true;</script>
     <!-- 2) Decap bundle -->
     <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
   </head>
   <body>
-    <!-- 3) cílový element -->
+    <!-- 3) Kořenový uzel pro app -->
     <div id="nc-root"></div>
 
-    <!-- 4) ruční konfigurace -->
+    <!-- 4) Ruční konfigurace -->
     <script>
       const cmsConfig = {
         backend: {
           name: "github",
-          repo: "https://github.com/Jan-Bu/Bits-Bytes",                   // ← uprav
+          repo: "https://github.com/Jan-Bu/Bits-Bytes",   // ← UPRAV na skutečné owner/repo
           branch: "Hlavni",
           base_url: "/.netlify/functions/oauth",
           auth_endpoint: "start",
@@ -70,10 +70,9 @@
               }
             ]
           }
-        ],
+        ]
       };
 
-      // 5) ruční spuštění
       window.CMS.init({ config: cmsConfig });
     </script>
   </body>
