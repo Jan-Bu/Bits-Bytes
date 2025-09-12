@@ -33,7 +33,7 @@
   [headers.values]
     Content-Security-Policy = """
       default-src 'self';
-      script-src 'self' 'unsafe-inline' https://unpkg.com;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com;
       style-src 'self' 'unsafe-inline';
       img-src 'self' data:;
       connect-src 'self' https://api.github.com https://github.com https://unpkg.com https://bits-bytes.netlify.app;

@@ -5,23 +5,24 @@
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Admin</title>
-
-    <!-- DŮLEŽITÉ: CMS se nespustí automaticky, nastavíme manuální init -->
+    <!-- 1) MANUAL_INIT musí být PŘED bundlem -->
     <script>window.CMS_MANUAL_INIT = true;</script>
-
-    <!-- Decap CMS bundle -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <!-- 2) Decap bundle -->
+    <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
   </head>
   <body>
+    <!-- 3) cílový element -->
+    <div id="nc-root"></div>
+
+    <!-- 4) ruční konfigurace -->
     <script>
-      // Minimal config přímo v HTML – žádné /admin/config.yml už netřeba
       const cmsConfig = {
         backend: {
           name: "github",
-          repo: "https://github.com/Jan-Bu/Bits-Bytes",           // ← UPRAV
-          branch: "Hlavni",
-          base_url: "/.netlify/functions/oauth", // náš OAuth bridge
-          auth_endpoint: "start"
+          repo: "OWNER/REPO",                   // ← uprav
+          branch: "main",
+          base_url: "/.netlify/functions/oauth",
+          auth_endpoint: "start",
         },
         media_folder: "public/uploads",
         public_folder: "/uploads",
@@ -61,7 +62,7 @@
                 file: "src/data/i18n/en.blog.json",
                 fields: [
                   { label: "ID", name: "id", widget: "string", required: false },
-                  { label: "Title (filename)", name: "title", widget: "string" },
+                  { label: "Title", name: "title", widget: "string" },
                   { label: "Date", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false },
                   { label: "Category", name: "category", widget: "string" },
                   { label: "Body", name: "body", widget: "text" }
@@ -69,10 +70,10 @@
               }
             ]
           }
-        ]
+        ],
       };
 
-      // Spustíme CMS
+      // 5) ruční spuštění
       window.CMS.init({ config: cmsConfig });
     </script>
   </body>
