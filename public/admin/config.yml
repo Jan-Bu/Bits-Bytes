@@ -1,0 +1,51 @@
+backend:
+  name: github
+  repo: Jan-Bu/Bits-Bytes
+  branch: Hlavni
+  base_url: https://bits-bytes.netlify.app
+  auth_endpoint: /.netlify/functions/oauth-authorize
+
+publish_mode: editorial_workflow
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+locale: "cs"
+
+collections:
+  - label: "Blog (Česky)"
+    name: "blog_cs"
+    files:
+      - label: "České články"
+        name: "cs_blog"
+        file: "src/data/i18n/cs.blog.json"
+        description: "Seznam českých článků"
+        fields:
+          - label: "Položky"
+            name: "items"
+            widget: "list"
+            summary: "{{fields.title}} ({{fields.date}} • {{fields.category}})"
+            fields:
+              - { label: "ID", name: "id", widget: "string", hint: "slug bez mezer" }
+              - { label: "Název (soubor)", name: "title", widget: "string" }
+              - { label: "Datum", name: "date", widget: "date", format: "YYYY-MM-DD" }
+              - { label: "Kategorie", name: "category", widget: "string" }
+              - { label: "Text", name: "body", widget: "text" }
+
+  - label: "Blog (English)"
+    name: "blog_en"
+    files:
+      - label: "English posts"
+        name: "en_blog"
+        file: "src/data/i18n/en.blog.json"
+        description: "List of English posts"
+        fields:
+          - label: "Items"
+            name: "items"
+            widget: "list"
+            summary: "{{fields.title}} ({{fields.date}} • {{fields.category}})"
+            fields:
+              - { label: "ID", name: "id", widget: "string", hint: "slug" }
+              - { label: "Title (filename-like)", name: "title", widget: "string" }
+              - { label: "Date", name: "date", widget: "date", format: "YYYY-MM-DD" }
+              - { label: "Category", name: "category", widget: "string" }
+              - { label: "Body", name: "body", widget: "text" }
