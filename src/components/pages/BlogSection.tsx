@@ -13,11 +13,13 @@ export type BlogPost = {
   id: string;
   title: string;
   date: string;     // ISO YYYY-MM-DD
-  category: string; // např. WEBDESIGN, GRAFIKA, BRANDING, TISK
+  category: string;
   body: string;
 };
 
-/* ===== Fallback demo příspěvky (když v translations nic není) ===== */
+type BlogJson = { items?: BlogPost[] };
+
+/* ===== Fallback demo příspěvky ===== */
 const FALLBACK_POSTS: BlogPost[] = [
   {
     id: "hello-1999",
@@ -44,6 +46,22 @@ const FALLBACK_POSTS: BlogPost[] = [
       "BBS, telnet a šum modemu.\nČlánky jako soubory, složky jako kategorie.\n\nENTER: otevřít, ESC: zavřít.",
   },
 ];
+
+/* ===== Pomocné funkce ===== */
+function detectLang(t: (k: string) => string): "cs" | "en" {
+  const val = (t("lang") || "").toLowerCase();
+  return val === "en" ? "en" : "cs";
+}
+
+function normalizeItems(json: BlogJson | undefined): BlogPost[] {
+  return (json?.items ?? []).map((p, idx) => ({
+    id: p.id || `post-${idx + 1}`,
+    title: p.title || `UNTITLED-${idx + 1}.TXT`,
+    date: p.date || new Date().toISOString().slice(0, 10),
+    category: (p.category || "NOVINKY").toUpperCase(),
+    body: p.body || "",
+  }));
+}
 
 /* ===== Win95 mini okno pro Notepad modal ===== */
 const Win95ModalFrame: React.FC<{
@@ -101,43 +119,41 @@ const NotepadModal: React.FC<{ t: (k: string) => string; post: BlogPost; onClose
   );
 };
 
-/* ===== Hlavní sekce – pouze obsah okna (bez desktop pozadí, bez top navigace) ===== */
+/* ===== Hlavní sekce ===== */
 const BlogSection: React.FC<Props> = ({ t }) => {
-  // Příspěvky z translations: očekáváme blog95.items.i1..iN
-  const posts = useMemo<BlogPost[]>(() => {
-    const items: BlogPost[] = [];
-    for (let i = 1; i <= 200; i++) {
-      const base = `blog95.items.i${i}`;
-      const id = t(`${base}.id`);
-      const title = t(`${base}.title`);
-      const date = t(`${base}.date`);
-      const category = t(`${base}.category`);
-      const body = t(`${base}.body`);
-      if (!title || title === `${base}.title`) continue;
-      items.push({
-        id: id && id !== `${base}.id` ? id : `post-${i}`,
-        title,
-        date: date && date !== `${base}.date` ? date : new Date().toISOString().slice(0, 10),
-        category: (category && category !== `${base}.category` ? category : "NOVINKY").toUpperCase(),
-        body: body && body !== `${base}.body` ? body : "",
-      });
-    }
-    return (items.length ? items : FALLBACK_POSTS).sort(
-      (a, b) => +new Date(b.date) - +new Date(a.date)
-    );
-  }, [t]);
+  const lang = useMemo(() => detectLang(t), [t]);
+  const [posts, setPosts] = useState<BlogPost[]>(FALLBACK_POSTS);
 
-  // UI stavy
+  // Dynamický import podle jazyka
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const mod: BlogJson =
+          lang === "cs"
+            ? await import("../../data/i18n/cs.blog.json")
+            : await import("../../data/i18n/en.blog.json");
+        if (active) {
+          const items = normalizeItems(mod);
+          setPosts((items.length ? items : FALLBACK_POSTS).sort(
+            (a, b) => +new Date(b.date) - +new Date(a.date)
+          ));
+        }
+      } catch {
+        if (active) setPosts(FALLBACK_POSTS);
+      }
+    }
+    load();
+    return () => { active = false; };
+  }, [lang]);
+
   const [openPost, setOpenPost] = useState<BlogPost | null>(null);
 
-  /* === RENDER (jen vnitřek okna – DesktopWindowManager dodá titlebar i rám) === */
   return (
     <div className="w-full h-full p-3">
       <div className="w-full h-full flex flex-col md:flex-row gap-3">
-        {/* VLEVO: Ikony souborů (poznámkový blok) místo složek */}
+        {/* VLEVO: Ikony */}
         <aside className="md:w-64 bg-[#C0C0C0] border border-black p-2 select-none">
-
-
           <div className="h-full overflow-auto">
             <ul className="flex flex-col items-center gap-4">
               {posts.map((p) => (
@@ -146,40 +162,19 @@ const BlogSection: React.FC<Props> = ({ t }) => {
                     onClick={() => setOpenPost(p)}
                     title={p.title}
                     aria-label={`Otevřít ${p.title}`}
-                    className="
-              group
-              flex flex-col items-center
-              focus:outline-none focus:ring-2 focus:ring-black
-            "
+                    className="group flex flex-col items-center focus:outline-none focus:ring-2 focus:ring-black"
                   >
-                    {/* Ikona poznámkového bloku (jednotná velikost) */}
                     <span
-                      className="
-                relative w-12 h-12
-                bg-white border border-black
-                shadow-[inset_-1px_-1px_0_#808080,inset_1px_1px_0_#ffffff]
-                group-hover:translate-y-[-1px] transition-transform
-              "
+                      className="relative w-12 h-12 bg-white border border-black shadow-[inset_-1px_-1px_0_#808080,inset_1px_1px_0_#ffffff] group-hover:translate-y-[-1px] transition-transform"
                       aria-hidden
                     >
-                      {/* Horní modrý pruh a linky textu */}
                       <span className="absolute inset-x-0 top-0 h-2 bg-[#0000AA]" />
                       <span className="absolute left-1 right-1 top-3 h-px bg-black/20" />
-                      <span className="absolute left-1 right-1 top-4.5 h-px bg-black/20" />
-                      <span className="absolute left-1 right-1 top-6 h-px bg-black/20" />
-                      <span className="absolute left-1 right-1 top-7.5 h-px bg-black/20" />
+                      <span className="absolute left-1 right-1 top-[18px] h-px bg-black/20" />
+                      <span className="absolute left-1 right-1 top-[24px] h-px bg-black/20" />
+                      <span className="absolute left-1 right-1 top-[30px] h-px bg-black/20" />
                     </span>
-
-                    {/* Název souboru – celý, zalamovaný (ne truncate) */}
-                    <span
-                      className="
-                mt-1 w-[92px] text-[11px] leading-4 text-center
-                whitespace-normal break-words
-                group-hover:bg-[#E0E0E0]
-                border border-transparent group-hover:border-black
-                px-1 py-0.5
-              "
-                    >
+                    <span className="mt-1 w-[92px] text-[11px] leading-4 text-center whitespace-normal break-words group-hover:bg-[#E0E0E0] border border-transparent group-hover:border-black px-1 py-0.5">
                       {p.title}
                     </span>
                   </button>
@@ -189,7 +184,7 @@ const BlogSection: React.FC<Props> = ({ t }) => {
           </div>
         </aside>
 
-        {/* VPRAVO: Seznam souborů (tabulka) – beze změny, pro rychlý přehled */}
+        {/* VPRAVO: Tabulka */}
         <section className="flex-1 bg-white border border-black overflow-hidden">
           <div className="grid grid-cols-3 text-sm font-bold bg-[#C0C0C0] border-b border-black">
             <div className="px-3 py-2">{t("blog95.col.name") || "Název"}</div>
@@ -208,7 +203,6 @@ const BlogSection: React.FC<Props> = ({ t }) => {
                 aria-label={`Otevřít ${p.title}`}
               >
                 <div className="px-3 py-2 flex items-center gap-2">
-                  {/* Mini verze ikony souboru v tabulce */}
                   <span className="relative w-4 h-4 bg-white border border-black">
                     <span className="absolute inset-x-0 top-0 h-1 bg-[#0000AA]" />
                   </span>
