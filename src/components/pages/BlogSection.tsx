@@ -96,6 +96,8 @@ const Win95ModalFrame: React.FC<{
 
 /* ===== Notepad detail ===== */
 const NotepadModal: React.FC<{ t: (k: string) => string; post: BlogPost; onClose: () => void }> = ({ t, post, onClose }) => {
+  const [isMaximized, setIsMaximized] = useState(false);
+
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onEsc);
@@ -107,14 +109,54 @@ const NotepadModal: React.FC<{ t: (k: string) => string; post: BlogPost; onClose
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/30" aria-modal role="dialog">
-      <Win95ModalFrame title={title} onClose={onClose} className="w-full max-w-3xl">
-        <div className="bg-white border border-black p-2 max-h-[65vh] overflow-auto">
+      <div
+        className="relative border border-black bg-[#C0C0C0]"
+        style={{
+          width: isMaximized ? "90%" : "100%",
+          height: isMaximized ? "90%" : "auto",
+          maxWidth: isMaximized ? "95%" : "48rem",
+          maxHeight: isMaximized ? "90%" : "65vh",
+        }}
+      >
+        {/* Titlebar (stejné jako parent okno) */}
+        <div
+          className="flex items-center justify-between text-white px-2 h-6 select-none"
+          style={{ background: "#253A8A" }}
+        >
+          <span className="font-bold text-sm tracking-wide">{title}</span>
+          <div className="flex gap-[3px]">
+            {/* Minimize = prostě zavřít */}
+            <button
+              onClick={onClose}
+              className="w-7 h-5 grid place-items-center bg-[#bdbdbd] border border-black hover:bg-[#a0a0a0]"
+            >
+              –
+            </button>
+            {/* Maximize / Restore */}
+            <button
+              onClick={() => setIsMaximized(!isMaximized)}
+              className="w-7 h-5 grid place-items-center bg-[#bdbdbd] border border-black hover:bg-[#a0a0a0]"
+            >
+              {isMaximized ? "❐" : "□"}
+            </button>
+            {/* Close */}
+            <button
+              onClick={onClose}
+              className="w-7 h-5 grid place-items-center bg-[#bdbdbd] border border-black hover:bg-[#a0a0a0]"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* Obsah */}
+        <div className="bg-white border border-black p-2 overflow-auto" style={{ height: isMaximized ? "calc(100% - 2rem)" : "auto" }}>
           <pre className="whitespace-pre-wrap font-mono text-sm leading-6">{post.body}</pre>
         </div>
-        <div className="mt-2 text-xs bg-[#C0C0C0] border border-black px-2 py-1 select-none">
+        <div className="mt-1 text-xs bg-[#C0C0C0] border-t border-black px-2 py-1 select-none">
           {t("blog95.statusLine") || "Řádek 1, Sloupec 1 | Kódování: ANSI | Naposledy změněno:"} {changed}
         </div>
-      </Win95ModalFrame>
+      </div>
     </div>
   );
 };
