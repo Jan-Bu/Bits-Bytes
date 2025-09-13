@@ -34,10 +34,16 @@ export const handler: Handler = async (event) => {
     const token = await exchangeCodeForToken(event);
     const html = `<!doctype html><meta charset="utf-8">
 <script>
-  (function () {
-    try { window.opener && window.opener.postMessage({ token: ${JSON.stringify(token)} }, window.location.origin); } catch(e) {}
-    window.close();
-  })();
+(function () {
+  function sendAllFormats(tkn) {
+    // starší i novější očekávání Decap / Netlify CMS
+    try { window.opener && window.opener.postMessage({ token: tkn }, "*"); } catch (e) {}
+    try { window.opener && window.opener.postMessage("authorization:github:token:" + tkn, "*"); } catch (e) {}
+  }
+  sendAllFormats(${JSON.stringify(token)});
+  // necháme zprávy opravdu odejít, pak zavřeme
+  setTimeout(function(){ window.close(); }, 300);
+})();
 </script>`;
     return { statusCode: 200, headers: { "Content-Type": "text/html; charset=utf-8" }, body: html };
   } catch (err: any) {
