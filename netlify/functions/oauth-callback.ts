@@ -33,16 +33,28 @@ export const handler: Handler = async (event) => {
   try {
     const token = await exchangeCodeForToken(event);
     const html = `<!doctype html><meta charset="utf-8">
+<title>Signing in…</title>
+<style>
+  html,body{background:#111;color:#eee;font:14px/1.4 system-ui;margin:0;padding:2rem}
+  .box{max-width:520px}
+  code{background:#222;padding:2px 6px;border-radius:4px}
+</style>
+<div class="box">
+  <h1>Signing in…</h1>
+  <p>Closing this window in a moment.</p>
+  <p>If it doesn't close, you can close it manually.</p>
+</div>
 <script>
 (function () {
-  function sendAllFormats(tkn) {
-    // starší i novější očekávání Decap / Netlify CMS
-    try { window.opener && window.opener.postMessage({ token: tkn }, "*"); } catch (e) {}
-    try { window.opener && window.opener.postMessage("authorization:github:token:" + tkn, "*"); } catch (e) {}
-  }
-  sendAllFormats(${JSON.stringify(token)});
-  // necháme zprávy opravdu odejít, pak zavřeme
-  setTimeout(function(){ window.close(); }, 300);
+  var t = ${JSON.stringify(token)};
+  try { window.opener && window.opener.postMessage({ token: t }, "*"); } catch(e) {}
+  try { window.opener && window.opener.postMessage("authorization:github:token:" + t, "*"); } catch(e) {}
+
+  // fallback bridge přes localStorage (parent si to vyzvedne)
+  try { localStorage.setItem("decap:bridge:github_token", t); } catch(e) {}
+
+  // malá prodleva, ať se zprávy doručí
+  setTimeout(function(){ window.close(); }, 600);
 })();
 </script>`;
     return { statusCode: 200, headers: { "Content-Type": "text/html; charset=utf-8" }, body: html };

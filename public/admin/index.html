@@ -7,10 +7,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body>
-    <!-- Root pro Decap -->
     <div id="nc-root"></div>
-
-    <!-- Decap CMS – načti až po <body> -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js" defer></script>
+
+    <!-- Bridge: pokud popup nestihl poslat postMessage, přečteme token z localStorage a doručíme ho Decapu -->
+    <script>
+      (function () {
+        function deliver() {
+          try {
+            var t = localStorage.getItem("decap:bridge:github_token");
+            if (t) {
+              window.postMessage({ token: t }, "*");
+              window.postMessage("authorization:github:token:" + t, "*");
+              // po doručení uklidit
+              localStorage.removeItem("decap:bridge:github_token");
+            }
+          } catch (e) {}
+        }
+        // zkus ihned po načtení a pak ještě jednou po malé prodlevě
+        deliver();
+        setTimeout(deliver, 400);
+      })();
+    </script>
   </body>
 </html>
