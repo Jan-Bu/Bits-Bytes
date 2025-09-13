@@ -6,6 +6,12 @@
       "date": "1999-08-28",
       "category": "NEWS",
       "body": "Hello world!\n\nThis is our retro blog in Windows 95 style.\nPlain, readable, without unnecessary layers.\n\n— Bits&Bytes"
+    },
+    {
+      "id": "second-entry",
+      "title": "SECOND-ENTRY.TXT",
+      "category": "TEST",
+      "body": "SO WHAT YOU SHIT"
     }
   ]
 }
