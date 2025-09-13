@@ -41,7 +41,7 @@ export const translations: Translations = {
     },
 
     clippy: {
-      label: "Clippy",
+      label: "Not Clippy",
       tips: {
         0: "Double-click an icon to open a window.",
         1: "You can drag icons on the desktop.",
@@ -612,7 +612,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
     },
 
     clippy: {
-      label: "Clippy",
+      label: "Not Clippy",
       tips: {
         0: "Dvojklik na ikonu otevře okno.",
         1: "Ikony můžeš přetahovat po ploše.",
