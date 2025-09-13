@@ -1,3 +1,4 @@
+// netlify/functions/oauth-callback.ts
 import type { Handler, HandlerEvent } from "@netlify/functions";
 
 function getBaseUrl() {
@@ -24,7 +25,7 @@ async function exchangeCodeForToken(event: HandlerEvent) {
   });
   if (!res.ok) throw new Error(`GitHub token exchange failed: ${res.status} ${await res.text()}`);
 
-  const data = await res.json() as { access_token?: string; error?: string; error_description?: string };
+  const data = (await res.json()) as { access_token?: string; error?: string; error_description?: string };
   if (!data.access_token) throw new Error(`No access_token: ${data.error || "unknown"} ${data.error_description || ""}`);
   return data.access_token;
 }
@@ -32,29 +33,23 @@ async function exchangeCodeForToken(event: HandlerEvent) {
 export const handler: Handler = async (event) => {
   try {
     const token = await exchangeCodeForToken(event);
+
+    // ✅ přečti state z query (GitHub ho vrací zpátky)
+    const state = event.queryStringParameters?.state || "";
+
     const html = `<!doctype html><meta charset="utf-8">
 <title>Signing in…</title>
-<style>
-  html,body{background:#111;color:#eee;font:14px/1.4 system-ui;margin:0;padding:2rem}
-  .box{max-width:520px}
-  code{background:#222;padding:2px 6px;border-radius:4px}
-</style>
-<div class="box">
-  <h1>Signing in…</h1>
-  <p>Closing this window in a moment.</p>
-  <p>If it doesn't close, you can close it manually.</p>
-</div>
 <script>
 (function () {
   var t = ${JSON.stringify(token)};
-  try { window.opener && window.opener.postMessage({ token: t }, "*"); } catch(e) {}
+  var s = ${JSON.stringify(state)};
+  // ✅ formát, který Decap očekává
+  try { window.opener && window.opener.postMessage({ token: t, provider: 'github', state: s }, window.location.origin); } catch(e) {}
+  // pro starší verze
   try { window.opener && window.opener.postMessage("authorization:github:token:" + t, "*"); } catch(e) {}
 
-  // fallback bridge přes localStorage (parent si to vyzvedne)
-  try { localStorage.setItem("decap:bridge:github_token", t); } catch(e) {}
-
-  // malá prodleva, ať se zprávy doručí
-  setTimeout(function(){ window.close(); }, 600);
+  // malá prodleva, ať se zpráva doručí
+  setTimeout(function(){ window.close(); }, 400);
 })();
 </script>`;
     return { statusCode: 200, headers: { "Content-Type": "text/html; charset=utf-8" }, body: html };
