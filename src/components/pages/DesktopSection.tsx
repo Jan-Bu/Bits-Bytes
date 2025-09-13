@@ -11,6 +11,8 @@ import BlogSection from './BlogSection';
 import ContactSection from './ContactSection';
 import TermsSection from './TermsSection';
 import GDPRSection from './GDPRSection';
+import ClippyAssistant from '../desktop/ClippyAssistant';
+
 
 /* ---- lokální rozšíření ID kvůli internímu prohlížeči ---- */
 type DesktopAppId = AppId | 'webview';
@@ -106,7 +108,6 @@ const DesktopIcon: React.FC<{
         const nxRaw = e.clientX - desktopLeft - local.current.dx;
         const nyRaw = e.clientY - desktopTop - local.current.dy;
 
-        // práh proti mikro-pohybům prstu
         const s = local.current.startedAt;
         if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) < 4) return;
 
@@ -187,7 +188,6 @@ const DesktopIcon: React.FC<{
   };
 
 const DesktopSection: React.FC = () => {
-  const navigate = useNavigate();
   const { t, language } = useTranslation();
   const desktopRef = useRef<HTMLDivElement>(null);
   const bp = useBreakpoint();
@@ -197,10 +197,10 @@ const DesktopSection: React.FC = () => {
   const openWebview = (url: string, title?: string) => {
     setWebviewUrl(url);
     if (title) setWebviewTitle(title);
-    openApp('webview'); // otevře okno a přenese nahoru
+    openApp('webview');
   };
 
-  // 🔒 Zákaz scrollu celé stránky (po dobu mountu komponenty)
+  // Zákaz scrollu body během desktopu
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -209,7 +209,7 @@ const DesktopSection: React.FC = () => {
     };
   }, []);
 
-  // Nastavení barvy horní lišty na mobilech JEN pro tuto stránku
+  // Barva horní lišty na mobilech
   useEffect(() => {
     const color = '#008080';
     let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
@@ -239,10 +239,10 @@ const DesktopSection: React.FC = () => {
   const { ICON_SIZE, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT } = useMemo(() => {
     if (bp === 'mobile') return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 16, TASKBAR_HEIGHT: 64 };
     if (bp === 'tablet') return { ICON_SIZE: 96, GRID: 140, DESKTOP_MARGIN: 20, TASKBAR_HEIGHT: 48 };
-    /* desktop */          return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 24, TASKBAR_HEIGHT: 40 };
+    return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 24, TASKBAR_HEIGHT: 40 };
   }, [bp]);
 
-  // Základní snap na grid
+  // Snap na grid
   const snapCoord = (n: number) =>
     DESKTOP_MARGIN + Math.round((n - DESKTOP_MARGIN) / GRID) * GRID;
 
@@ -274,7 +274,7 @@ const DesktopSection: React.FC = () => {
   };
   const snapY = (n: number) => snapCoord(n);
 
-  // Tablet layout (wrap do více sloupců podle výšky)
+  // Tablet layout
   const layoutTabletColumns = () => {
     const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr'];
     const rect = desktopRef.current?.getBoundingClientRect();
@@ -384,9 +384,7 @@ const DesktopSection: React.FC = () => {
     setOpen((cur) => cur.filter(x => x !== id));
     setZOrder((cur) => cur.filter(x => x !== id));
   };
-  const minimizeApp = (_id: DesktopAppId) => {
-    // Minimalizaci řeší interně DesktopWindowManager (prop je jen signatura).
-  };
+  const minimizeApp = (_id: DesktopAppId) => { };
   const maximizeApp = (id: DesktopAppId) => bringToFront(id);
 
   const handleMoveIcon = (id: AppId, nx: number, ny: number) => {
@@ -399,7 +397,6 @@ const DesktopSection: React.FC = () => {
       case 'about':
         return <AboutSection t={t} onExit={() => closeApp('about')} />;
       case 'services':
-        // pokud ServicesSection podporuje onOpenApp, můžeš předat openApp
         return (
           <ServicesSection
             t={t}
@@ -477,20 +474,24 @@ const DesktopSection: React.FC = () => {
         );
       })}
 
-      {/* Správce oken */}
+
       <DesktopWindowManager
-        open={open}
-        zOrder={zOrder}
-        titles={titles}
-        onFocus={bringToFront}
-        onClose={closeApp}
-        onMinimize={minimizeApp}
-        onMaximize={maximizeApp}
-        renderContent={renderContent}
-        onAboutFullscreenChange={(isFs) => {
-          document.body.classList.toggle('overflow-hidden', isFs);
-        }}
+        open={open as AppId[]}
+        zOrder={zOrder as AppId[]}
+        titles={titles as Record<AppId, string>}
+        onFocus={(id) => bringToFront(id)}
+        onClose={(id) => closeApp(id)}
+        onMinimize={(_id) => { /* minimalizace řeší manager interně */ }}
+        onMaximize={(id) => maximizeApp(id)}
+        renderContent={(id) => renderContent(id as any)}
         aboutFullscreenContent={<AboutSection t={t} onExit={() => closeApp('about')} />}
+      />
+
+      {/* definetely not clippy – vpravo uprostřed, klik cykluje tipy */}
+      <ClippyAssistant
+        centered
+        rightOffset={DESKTOP_MARGIN}
+        bottomOffset={TASKBAR_HEIGHT}
       />
     </div>
   );

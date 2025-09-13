@@ -1,6 +1,8 @@
 // src/components/desktop/DesktopWindowManager.tsx
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { X, Minus, Square } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
 
 import { AppId } from './types';
 
@@ -295,38 +297,94 @@ const Win95Window: React.FC<WinProps> = ({
 const Taskbar: React.FC<{
   items: { id: AppId; title: string; active: boolean; minimized: boolean }[];
   onClickItem: (id: AppId) => void; // toggle minimize/restore
-}> = ({ items, onClickItem }) => (
-  <div
-    className="fixed bottom-0 left-0 right-0 h-8 flex items-center gap-2 px-2"
-    style={{
-      background: WIN95.face,
-      boxShadow: `0 -1px ${WIN95.dark}, inset 1px 1px ${WIN95.light}, inset -1px -1px ${WIN95.dark}`
-    }}
-  >
-    <button className="h-6 px-3 bg-[#bdbdbd] border border-black text-sm font-semibold" style={{ boxShadow: bevelOut }}>
-      Start
-    </button>
-    <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-      {items.map((it) => (
-        <button
-          key={it.id as unknown as string}
-          onClick={() => onClickItem(it.id)}
-          className={`h-6 px-2 bg-[#bdbdbd] border border-black text-xs ${it.active && !it.minimized ? 'font-bold' : ''}`}
-          style={{ boxShadow: (it.active && !it.minimized) ? bevelIn : bevelOut, opacity: it.minimized ? 0.85 : 1 }}
-          title={it.minimized ? 'Restore' : 'Minimize'}
-        >
-          {it.title}
-        </button>
-      ))}
-    </div>
+}> = ({ items, onClickItem }) => {
+  const navigate = useNavigate();
+
+  // === Hodiny (beze změny) ===
+  const [time, setTime] = React.useState<string>(() =>
+    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  );
+  React.useEffect(() => {
+    const update = () =>
+      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    const id = window.setInterval(update, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // === Jazykové tlačítko (Win95 styl) ===
+  type Lang = 'cs' | 'en';
+  const detectLang = (): Lang => {
+    const ls = (localStorage.getItem('lang') || '').toLowerCase();
+    if (ls === 'cs' || ls === 'en') return ls;
+    return navigator.language.toLowerCase().startsWith('cs') ? 'cs' : 'en';
+  };
+  const [lang, setLang] = React.useState<Lang>(detectLang);
+
+  const toggleLang = () => {
+    const next: Lang = lang === 'cs' ? 'en' : 'cs';
+    setLang(next);
+    try {
+      localStorage.setItem('lang', next);
+    } catch { }
+    // informuj zbytek appky (DesktopSection/useTranslation si na to může navázat)
+    window.dispatchEvent(new CustomEvent('BB_SET_LANGUAGE', { detail: { lang: next } }));
+  };
+
+  return (
     <div
-      className="h-6 px-3 grid place-items-center text-xs"
-      style={{ background: '#bdbdbd', boxShadow: bevelIn, minWidth: 68 }}
+      className="fixed bottom-0 left-0 right-0 h-8 flex items-center gap-2 px-2"
+      style={{
+        background: WIN95.face,
+        boxShadow: `0 -1px ${WIN95.dark}, inset 1px 1px ${WIN95.light}, inset -1px -1px ${WIN95.dark}`
+      }}
     >
-      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      {/* Start */}
+      <button
+        className="h-6 px-3 bg-[#bdbdbd] border border-black text-sm font-semibold"
+        style={{ boxShadow: bevelOut }}
+        onClick={() => navigate('/')}
+        aria-label="Start"
+      >
+        Start
+      </button>
+
+      {/* Otevřená okna */}
+      <div className="flex-1 flex items-center gap-2 overflow-x-auto">
+        {items.map((it) => (
+          <button
+            key={it.id as unknown as string}
+            onClick={() => onClickItem(it.id)}
+            className={`h-6 px-2 bg-[#bdbdbd] border border-black text-xs ${it.active && !it.minimized ? 'font-bold' : ''}`}
+            style={{ boxShadow: (it.active && !it.minimized) ? bevelIn : bevelOut, opacity: it.minimized ? 0.85 : 1 }}
+            title={it.minimized ? 'Restore' : 'Minimize'}
+          >
+            {it.title}
+          </button>
+        ))}
+      </div>
+
+      {/* Jazyk – vlevo od hodin, jako staré Win95 "EN"/"CS" */}
+      <button
+        type="button"
+        onClick={toggleLang}
+        title="Switch language"
+        className="h-6 px-2 bg-[#bdbdbd] border border-black text-[11px] font-bold tracking-wider"
+        style={{ boxShadow: bevelOut, minWidth: 32 }}
+        aria-label="Language"
+      >
+        {lang.toUpperCase()}
+      </button>
+
+      {/* Hodiny */}
+      <div
+        className="h-6 px-3 grid place-items-center text-xs"
+        style={{ background: '#bdbdbd', boxShadow: bevelIn, minWidth: 68 }}
+      >
+        {time}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 type DesktopWindowManagerProps = {
   open: AppId[];
@@ -471,15 +529,8 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
   // Retro loader pro About
   const RetroLoading: React.FC = () => (
     <div
-      className="w-full h-full rounded-[2px] overflow-hidden"
-      style={{
-        backgroundColor: '#000',
-        backgroundImage: `
-          radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.95) 100%),
-          repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 2px, transparent 4px)
-        `,
-        imageRendering: 'pixelated',
-      }}
+      className="w-full h-full"
+      style={{ backgroundColor: '#000', imageRendering: 'pixelated' }}
     >
       <div className="w-full h-full flex flex-col items-center justify-center text-green-400 font-mono px-4">
         <div className="text-center mb-6">
@@ -589,10 +640,11 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
               onClose={handleClose}
               onMinimize={handleMinimize}
               onMaximize={onFocus}
-              frame="panel" // loader v panelu
+              frame="edge"              // ← žádný vnitřní panel, obsah přes celé okno
               enforce70={false}
             >
-              <div className="w-full h-[360px]">
+              {/* obsah pod titlebarem vyplní celé okno */}
+              <div className="w-full h-[calc(100%-24px)]">
                 <RetroLoading />
               </div>
             </Win95Window>

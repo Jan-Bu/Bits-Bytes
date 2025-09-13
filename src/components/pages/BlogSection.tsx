@@ -1,5 +1,6 @@
 // src/components/pages/BlogSection.tsx
 import React, { useMemo, useState, useEffect } from "react";
+import { useTranslation } from '../../hooks/useTranslation';
 
 /** Props z DesktopWindowManageru */
 type Props = {
@@ -47,11 +48,6 @@ const FALLBACK_POSTS: BlogPost[] = [
   },
 ];
 
-/* ===== Pomocné funkce ===== */
-function detectLang(t: (k: string) => string): "cs" | "en" {
-  const val = (t("lang") || "").toLowerCase();
-  return val === "en" ? "en" : "cs";
-}
 
 function normalizeItems(json: BlogJson | undefined): BlogPost[] {
   return (json?.items ?? []).map((p, idx) => {
@@ -270,7 +266,8 @@ const NotepadModal: React.FC<{ t: (k: string) => string; post: BlogPost; onClose
 
 /* ===== Hlavní sekce ===== */
 const BlogSection: React.FC<Props> = ({ t }) => {
-  const lang = useMemo(() => detectLang(t), [t]);
+  const { language } = useTranslation();           // ✅ hook uvnitř komponenty
+  const lang = language === 'en' ? 'en' : 'cs';    // ✅ jazyk pro import JSON
   const [posts, setPosts] = useState<BlogPost[]>(FALLBACK_POSTS);
 
   // Dynamický import podle jazyka
@@ -312,7 +309,7 @@ const BlogSection: React.FC<Props> = ({ t }) => {
                     onClick={(e) => { e.preventDefault(); setOpenPost(p); }}
                     title={p.title}
                     aria-label={`Otevřít ${p.title}`}
-                    className="group flex flex-col items-center focus:outline-none focus:ring-2 focus:ring-black"
+                    className="group flex flex-col items-center"
                   >
                     <span
                       className="relative w-12 h-12 bg-white border border-black shadow-[inset_-1px_-1px_0_#808080,inset_1px_1px_0_#ffffff] group-hover:translate-y-[-1px] transition-transform"

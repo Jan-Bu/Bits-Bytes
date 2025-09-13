@@ -12,7 +12,44 @@ function mapBlogArrayToItems(arr: Array<any>) {
 
 export const translations: Translations = {
   en: {
-    /* ===== Desktop (ikonky na ploše) ===== */
+    /* ===== Common (globální krátké texty) ===== */
+    common: {
+      actions: {
+        ok: 'OK',
+        cancel: 'Cancel',
+        save: 'Save',
+        close: 'Close',
+        back: 'Back',
+        next: 'Next',
+        retry: 'Retry',
+        more: 'More',
+        open: 'Open',
+        copy: 'Copy',
+        copied: 'Copied!',
+        search: 'Search',
+      },
+      states: {
+        loading: 'Loading…',
+        processing: 'Working on it…',
+        empty: 'Nothing to show here.',
+        error: 'Something went wrong.',
+      },
+      date: {
+        today: 'Today',
+        yesterday: 'Yesterday',
+      },
+    },
+
+    clippy: {
+      label: "Clippy",
+      tips: {
+        0: "Double-click an icon to open a window.",
+        1: "You can drag icons on the desktop.",
+        2: "Click me again for another tip.",
+      },
+    },
+
+    /* ===== Desktop (ikonky, lišta, okna) ===== */
     desktop: {
       icons: {
         about: 'About Us',
@@ -22,6 +59,39 @@ export const translations: Translations = {
         contact: 'Contact',
         terms: 'Terms',
         gdpr: 'GDPR',
+      },
+      taskbar: {
+        start: 'Start',
+        showDesktop: 'Show Desktop',
+        clockTooltip: 'Current time',
+      },
+      window: {
+        titles: {
+          about: 'About – Bits&Bytes',
+          services: 'Services – Bits&Bytes',
+          pricing: 'Pricing – Bits&Bytes',
+          blog: 'Blog – Bits&Bytes',
+          contact: 'Contact – Bits&Bytes',
+          terms: 'Terms & Conditions',
+          gdpr: 'GDPR & Privacy Policy',
+          webview: 'Internal Browser',
+        },
+        controls: {
+          minimize: 'Minimize',
+          maximize: 'Maximize',
+          restore: 'Restore',
+          close: 'Close',
+        },
+        menu: {
+          file: 'File',
+          edit: 'Edit',
+          view: 'View',
+          help: 'Help',
+        },
+      },
+      dialogs: {
+        readOnly: 'This document is read-only.',
+        notSaved: 'You have unsaved changes. Close anyway?',
       },
     },
 
@@ -39,8 +109,8 @@ export const translations: Translations = {
       headline: 'We build websites and branding that stand out.',
       menu: 'MENU',
     },
+
     about: {
-      /* ⬇️ doplněno menu pro zavření hry */
       menu: {
         closeGame: 'Close the game',
       },
@@ -124,6 +194,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
         contact: 'CONTACT US',
       },
     },
+
     services: {
       title: 'Our Services',
       web: {
@@ -140,6 +211,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
         description: 'User-centered design that creates engaging and intuitive digital experiences.',
       },
     },
+
     pricing: {
       intro: {
         title: 'Pricing.txt',
@@ -147,12 +219,24 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       text:
         "At our studio, you won’t find standard packages or fixed prices. Every project is unique and deserves an individual approach.\n\n We design websites, graphics, branding, and print materials fully tailored to your needs. Whether you’re looking for a simple website, a complete brand identity, or custom print solutions, we make sure everything fits your vision.\n\n Before we start, we always agree on the details, so you know exactly what to expect, with no unpleasant surprises.",
     },
+
+    /* ===== Blog (Win95 styl) ===== */
     blog95: {
       windowTitle: "Explorer – BLOG",
       notepadTitle: "Notepad",
       statusLine: "Line 1, Col 1 | Encoding: ANSI | Last modified:",
       folders: "Folders",
       readonly: "Read-only",
+      toolbar: {
+        refresh: 'Refresh',
+        view: 'View',
+        list: 'List',
+        grid: 'Grid',
+        sortBy: 'Sort by',
+        filter: 'Filter',
+        searchPh: 'Search posts…',
+        openInNotepad: 'Open in Notepad',
+      },
       cat: {
         news: "NEWS",
         web: "WEBDESIGN",
@@ -169,6 +253,8 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       empty: "No posts in this folder.",
       items: mapBlogArrayToItems(enBlog.items),
     },
+
+    /* ===== Contact ===== */
     contact: {
       title: 'Contact',
       tabs: { email: 'E-mail', phone: 'Phone', info: 'Info' },
@@ -193,6 +279,10 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
         altMail: 'Open default mail client',
         useMailer: 'or use your mail client',
         sentToast: 'Thanks! Your message is ready to be sent.',
+        tooltips: {
+          copyAddress: 'Copy e-mail address',
+          openClient: 'Open your e-mail client',
+        },
       },
 
       phone: {
@@ -208,6 +298,10 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
           title: 'Bytes',
           name: 'Alan Matoušek',
           hours: 'Availability: 08:00–18:00',
+        },
+        tooltips: {
+          callNow: 'Call now',
+          copyNumber: 'Copy phone number',
         },
       },
 
@@ -226,10 +320,12 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
           label: 'Location:',
           value: 'Prague, Czech Republic',
           note: 'Visits by appointment',
+          openMap: 'Open map',
         },
         footerTip: 'Prefer calling? Check the Phone tab.',
       },
     },
+
     terms: {
       title: 'Terms & Conditions',
       meta: {
@@ -335,6 +431,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
           'Bits & Bytes, Company ID: 01110713, Prague, Czech Republic — E-mail: studio.bitsbytes@gmail.com',
       },
     },
+
     gdpr: {
       title: 'GDPR & Privacy Policy',
       intro: {
@@ -382,6 +479,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
           'We may update this Policy. The current version is published on our website with the effective date.',
       },
     },
+
     cookies: {
       title: 'Cookie Preferences',
       description: 'We use cookies to enhance your browsing experience and analyze our traffic.',
@@ -485,7 +583,44 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
   },
 
   cs: {
-    /* ===== Desktop (ikonky na ploše) ===== */
+    /* ===== Common (globální krátké texty) ===== */
+    common: {
+      actions: {
+        ok: 'OK',
+        cancel: 'Zrušit',
+        save: 'Uložit',
+        close: 'Zavřít',
+        back: 'Zpět',
+        next: 'Další',
+        retry: 'Zkusit znovu',
+        more: 'Více',
+        open: 'Otevřít',
+        copy: 'Kopírovat',
+        copied: 'Zkopírováno!',
+        search: 'Hledat',
+      },
+      states: {
+        loading: 'Načítám…',
+        processing: 'Pracuji na tom…',
+        empty: 'Zde zatím nic není.',
+        error: 'Něco se pokazilo.',
+      },
+      date: {
+        today: 'Dnes',
+        yesterday: 'Včera',
+      },
+    },
+
+    clippy: {
+      label: "Clippy",
+      tips: {
+        0: "Dvojklik na ikonu otevře okno.",
+        1: "Ikony můžeš přetahovat po ploše.",
+        2: "Klikni na mě znovu pro další tip.",
+      },
+    },
+
+    /* ===== Desktop ===== */
     desktop: {
       icons: {
         about: 'O nás',
@@ -495,6 +630,39 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
         contact: 'Kontakt',
         terms: 'Obchodní podmínky',
         gdpr: 'GDPR',
+      },
+      taskbar: {
+        start: 'Start',
+        showDesktop: 'Zobrazit plochu',
+        clockTooltip: 'Aktuální čas',
+      },
+      window: {
+        titles: {
+          about: 'O nás – Bits&Bytes',
+          services: 'Služby – Bits&Bytes',
+          pricing: 'Ceník – Bits&Bytes',
+          blog: 'Blog – Bits&Bytes',
+          contact: 'Kontakt – Bits&Bytes',
+          terms: 'Obchodní podmínky',
+          gdpr: 'GDPR a Zásady',
+          webview: 'Vnitřní prohlížeč',
+        },
+        controls: {
+          minimize: 'Minimalizovat',
+          maximize: 'Maximalizovat',
+          restore: 'Obnovit',
+          close: 'Zavřít',
+        },
+        menu: {
+          file: 'Soubor',
+          edit: 'Úpravy',
+          view: 'Zobrazení',
+          help: 'Nápověda',
+        },
+      },
+      dialogs: {
+        readOnly: 'Tento dokument je jen pro čtení.',
+        notSaved: 'Máte neuložené změny. Přesto zavřít?',
       },
     },
 
@@ -512,8 +680,8 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       headline: 'Vytváříme webové stránky a branding, které vynikají.',
       menu: 'MENU',
     },
+
     about: {
-      /* ⬇️ doplněno menu pro zavření hry */
       menu: {
         closeGame: 'Ukončit hru',
       },
@@ -588,6 +756,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
         contact: 'KONTAKTUJTE NÁS',
       },
     },
+
     services: {
       title: 'Naše služby',
       web: {
@@ -604,6 +773,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
         description: 'Uživatelsky orientovaný design, který vytváří poutavé a intuitivní digitální zážitky.',
       },
     },
+
     pricing: {
       intro: {
         title: 'Ceník.txt',
@@ -611,12 +781,23 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
       text:
         'U nás nenajdete univerzální balíčky ani pevné ceny. Každý projekt je unikátní a zaslouží si individuální přístup.\n\n Navrhujeme weby, grafiku, branding i tiskové materiály přesně na míru vašim potřebám. Ať hledáte jednoduchý web, kompletní identitu, nebo tiskové řešení, postaráme se, aby vše sedělo vaší vizi.\n\n Ještě před začátkem si vyjasníme detaily, abyste přesně věděli, co dostanete — bez nepříjemných překvapení.',
     },
+
     blog95: {
       windowTitle: "Průzkumník – BLOG",
       notepadTitle: "Poznámkový blok",
       statusLine: "Řádek 1, Sloupec 1 | Kódování: ANSI | Naposledy změněno:",
       folders: "Složky",
       readonly: "Jen pro čtení",
+      toolbar: {
+        refresh: 'Obnovit',
+        view: 'Zobrazení',
+        list: 'Seznam',
+        grid: 'Mřížka',
+        sortBy: 'Řadit podle',
+        filter: 'Filtrovat',
+        searchPh: 'Hledat články…',
+        openInNotepad: 'Otevřít v Poznámkovém bloku',
+      },
       cat: {
         news: "NOVINKY",
         web: "WEBDESIGN",
@@ -633,6 +814,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
       empty: "Žádné články v této složce.",
       items: mapBlogArrayToItems(csBlog.items),
     },
+
     contact: {
       title: 'Kontakt',
       tabs: { email: 'E-mail', phone: 'Telefon', info: 'Informace' },
@@ -657,6 +839,10 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
         altMail: 'Otevřít výchozího e-mailového klienta',
         useMailer: 'nebo použít e-mailového klienta',
         sentToast: 'Díky! Zpráva byla připravena k odeslání.',
+        tooltips: {
+          copyAddress: 'Zkopírovat e-mailovou adresu',
+          openClient: 'Otevřít e-mailového klienta',
+        },
       },
 
       phone: {
@@ -672,6 +858,10 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
           title: 'Bytes',
           name: 'Alan Matoušek',
           hours: 'Dostupnost: 08:00–18:00',
+        },
+        tooltips: {
+          callNow: 'Volat nyní',
+          copyNumber: 'Zkopírovat číslo',
         },
       },
 
@@ -690,10 +880,12 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
           label: 'Sídlo:',
           value: 'Praha, Česká republika',
           note: 'Návštěvy po předchozí domluvě',
+          openMap: 'Otevřít mapu',
         },
         footerTip: 'Preferujete telefon? Podívejte se na záložku Telefon.',
       },
     },
+
     terms: {
       title: 'Obchodní podmínky',
       meta: {
@@ -799,6 +991,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
           'Alan Matoušek, IČO: 01110713, Praha, Česká republika — E-mail: studio.bitsbytes@gmail.com',
       },
     },
+
     gdpr: {
       title: 'GDPR a Zásady ochrany osobních údajů',
       intro: {
@@ -846,6 +1039,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
           'Tyto Zásady můžeme aktualizovat. Aktuální verze je vždy na webu s uvedením účinnosti.',
       },
     },
+
     cookies: {
       title: 'Nastavení cookies',
       description: 'Používáme cookies pro zlepšení vašeho prohlížení a analýzu našeho provozu.',
