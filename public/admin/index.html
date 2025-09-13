@@ -5,9 +5,12 @@
     <title>Admin</title>
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Decap CMS -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </head>
   <body>
+    <!-- Root pro Decap -->
+    <div id="nc-root"></div>
+
+    <!-- Decap CMS – načti až po <body> -->
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js" defer></script>
   </body>
 </html>
