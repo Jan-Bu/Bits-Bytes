@@ -1,11 +1,11 @@
+// src/components/desktop/DesktopWindowManager.tsx
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { X, Minus, Square } from 'lucide-react';
-import { WindowBusCtx } from './WindowBus'; // ✨ bus pro děti
 
 import { AppId } from './types';
 
 type Titles = Record<AppId, string>;
-type WindowPos = Record<string, { left: number; top: number }>;
+type WindowPos = Record<AppId, { left: number; top: number }>;
 
 const WIN95 = {
   face: '#c0c0c0',
@@ -18,47 +18,70 @@ const WIN95 = {
 const bevelIn = `inset 1px 1px ${WIN95.light}, inset -1px -1px ${WIN95.dark}`;
 const bevelOut = `inset 1px 1px ${WIN95.dark}, inset -1px -1px ${WIN95.light}`;
 
-const TASKBAR_SAFE = 40;
+const TASKBAR_SAFE = 40; // rezerva dole (taskbar ~32 px)
 const TITLEBAR_H = 24;
 
 type WinProps = {
-  id: string;
+  id: AppId;
   title: string;
   left: number;
   top: number;
   z: number;
-  onFocus: (id: string) => void;
-  onClose: (id: string) => void;
-  onMinimize: (id: string) => void;
-  onMaximize: (id: string) => void;
+  onFocus: (id: AppId) => void;
+  onClose: (id: AppId) => void;
+  onMinimize: (id: AppId) => void;
+  onMaximize: (id: AppId) => void;
   children: React.ReactNode;
   frame?: 'panel' | 'edge';
   enforce70?: boolean;
+  autoSize?: boolean;
+  panelScrollInside?: boolean;
 };
 
 const Win95Window: React.FC<WinProps> = ({
   id, title, left, top, z,
   onFocus, onClose, onMinimize, onMaximize,
-  children, frame = 'panel', enforce70 = false
+  children, frame = 'panel', enforce70 = false,
+  autoSize = false,
+  panelScrollInside = false,
 }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const titleRef = useRef<HTMLDivElement | null>(null);
   const dragData = useRef<{ dx: number; dy: number; pid: number } | null>(null);
 
+  // === responsivní velikosti (telefon ponechán), landscape >= 70% pokud enforce70 === true ===
   const getWinSize = () => {
+    // spolehlivější rozměry na iOS/iPadOS
     const vw = Math.round(window.visualViewport?.width ?? document.documentElement.clientWidth ?? window.innerWidth);
     const vh = Math.round(window.visualViewport?.height ?? document.documentElement.clientHeight ?? window.innerHeight);
+
     const portrait = vh >= vw;
 
     if (portrait) {
-      return { width: Math.min(Math.round(vw * 0.92), 560), height: Math.min(Math.round(vh * 0.86), 620) };
+      // telefon / portrét beze změny
+      return {
+        width: Math.min(Math.round(vw * 0.92), 560),
+        height: Math.min(Math.round(vh * 0.86), 620),
+      };
     }
+
     if (enforce70) {
+      // ⬆️ „iPad“ šířky: udělej to větší (cca 90 %)
+      // iPad / tablet landscape bývá cca 820–1180 px šířka (CSS px)
       const isIPadWidth = vw >= 800 && vw <= 1200;
       const factor = isIPadWidth ? 0.90 : 0.70;
-      return { width: Math.round(vw * factor), height: Math.round(vh * factor) };
+
+      return {
+        width: Math.round(vw * factor),
+        height: Math.round(vh * factor),
+      };
     }
-    return { width: Math.min(Math.round(vw * 0.9), 720), height: Math.min(Math.round(vh * 0.78), 460) };
+
+    // původní landscape (např. pro ABOUT)
+    return {
+      width: Math.min(Math.round(vw * 0.9), 720),
+      height: Math.min(Math.round(vh * 0.78), 460),
+    };
   };
 
   const [baseSize, setBaseSize] = useState(getWinSize);
@@ -75,6 +98,7 @@ const Win95Window: React.FC<WinProps> = ({
     return { x: Math.min(Math.max(0, x), maxX), y: Math.min(Math.max(0, y), maxY) };
   }, [baseSize.width, baseSize.height, isMaximized]);
 
+  // Srovnat startovní pozici
   useEffect(() => {
     if (!ref.current) return;
     const { x, y } = clampPos(left, top);
@@ -82,6 +106,7 @@ const Win95Window: React.FC<WinProps> = ({
     ref.current.style.top = `${y}px`;
   }, [left, top, clampPos]);
 
+  // Resize / orientationchange
   useEffect(() => {
     const onResize = () => {
       if (!isMaximized) setBaseSize(getWinSize());
@@ -101,6 +126,7 @@ const Win95Window: React.FC<WinProps> = ({
     };
   }, [clampPos, isMaximized]);
 
+  // === DRAG titulku – nechytej tlačítka a capture na titlebar ===
   const onPointerDownTitle = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
     if (target?.closest('button')) return;
@@ -113,7 +139,7 @@ const Win95Window: React.FC<WinProps> = ({
   const onPointerMoveTitle = (e: React.PointerEvent) => {
     if (!ref.current || !dragData.current || isMaximized) return;
     const nx = e.clientX - dragData.current.dx;
-       const ny = e.clientY - dragData.current.dy;
+    const ny = e.clientY - dragData.current.dy;
     const cl = clampPos(nx, ny);
     ref.current.style.left = `${cl.x}px`;
     ref.current.style.top = `${cl.y}px`;
@@ -122,12 +148,20 @@ const Win95Window: React.FC<WinProps> = ({
     if (titleRef.current && titleRef.current.hasPointerCapture?.(pid)) titleRef.current.releasePointerCapture(pid);
     dragData.current = null;
   };
-  const onPointerUpTitle = () => { if (dragData.current) releaseCapture(dragData.current.pid); };
-  const onPointerCancelTitle = () => { if (dragData.current) releaseCapture(dragData.current.pid); };
+  const onPointerUpTitle = () => {
+    if (!dragData.current) return;
+    releaseCapture(dragData.current.pid);
+  };
+  const onPointerCancelTitle = () => {
+    if (!dragData.current) return;
+    releaseCapture(dragData.current.pid);
+  };
 
+  // === Maximize toggle ===
   const toggleMaximize = () => {
-    onMaximize(id);
+    onMaximize(id); // kvůli zOrder
     if (!ref.current) return;
+
     if (!isMaximized) {
       const curLeft = parseFloat(ref.current.style.left || '0') || 0;
       const curTop = parseFloat(ref.current.style.top || '0') || 0;
@@ -144,6 +178,7 @@ const Win95Window: React.FC<WinProps> = ({
     }
   };
 
+  const isAuto = autoSize && !isMaximized;
   const width = isMaximized ? window.innerWidth : baseSize.width;
   const height = isMaximized ? Math.max(200, window.innerHeight - TASKBAR_SAFE) : baseSize.height;
 
@@ -154,7 +189,15 @@ const Win95Window: React.FC<WinProps> = ({
       style={{
         position: 'absolute',
         left, top,
-        width, height,
+        ...(isAuto
+          ? {
+            // auto dle obsahu + limity viewportu
+            maxWidth: Math.round((window.visualViewport?.width ?? window.innerWidth) * 0.92),
+            maxHeight: Math.max(200, (window.visualViewport?.height ?? window.innerHeight) - TASKBAR_SAFE - 8),
+          }
+          : {
+            width, height,
+          }),
         background: WIN95.face,
         boxShadow: bevelOut,
         zIndex: z,
@@ -164,6 +207,7 @@ const Win95Window: React.FC<WinProps> = ({
       role="dialog"
       aria-label={title}
     >
+      {/* Titlebar */}
       <div
         ref={titleRef}
         onPointerDown={onPointerDownTitle}
@@ -171,53 +215,114 @@ const Win95Window: React.FC<WinProps> = ({
         onPointerUp={onPointerUpTitle}
         onPointerCancel={onPointerCancelTitle}
         className="h-6 px-2 flex items-center justify-between text-white"
-        style={{ background: WIN95.title, cursor: 'move', touchAction: 'none' }}
+        style={{ background: WIN95.title, cursor: isMaximized ? 'default' : 'move', touchAction: 'none' }}
       >
         <span className="font-bold text-sm tracking-wide select-none">{title}</span>
+
         <div className="flex gap-[3px]">
-          <button type="button" onClick={() => onMinimize(id)} aria-label="Minimize"
+          <button
+            type="button"
+            onClick={() => onMinimize(id)}
+            aria-label="Minimize"
             className="w-7 h-5 grid place-items-center bg-[#bdbdbd] border border-black hover:bg-[#a0a0a0]"
-            style={{ boxShadow: bevelOut, cursor: 'pointer' }}><Minus size={14} /></button>
-          <button type="button" onClick={toggleMaximize} aria-label="Maximize"
+            style={{ boxShadow: bevelOut, cursor: 'pointer' }}
+          >
+            <Minus size={14} />
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleMaximize}
+            aria-label={isMaximized ? 'Restore' : 'Maximize'}
             className="w-7 h-5 grid place-items-center bg-[#bdbdbd] border border-black hover:bg-[#a0a0a0]"
-            style={{ boxShadow: bevelOut, cursor: 'pointer' }}><Square size={12} /></button>
-          <button type="button" onClick={() => onClose(id)} aria-label="Close"
+            style={{ boxShadow: bevelOut, cursor: 'pointer' }}
+          >
+            <Square size={12} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onClose(id)}
+            aria-label="Close"
             className="w-7 h-5 grid place-items-center bg-[#bdbdbd] border border-black hover:bg-[#a0a0a0]"
-            style={{ boxShadow: bevelOut, cursor: 'pointer' }}><X size={14} /></button>
+            style={{ boxShadow: bevelOut, cursor: 'pointer' }}
+          >
+            <X size={14} />
+          </button>
         </div>
       </div>
 
+      {/* Content */}
       {frame === 'panel' ? (
-        <div className="p-2 w-full" style={{ height: `calc(100% - ${TITLEBAR_H}px)` }}>
-          <div className="w-full h-full bg-white overflow-auto" style={{ boxShadow: bevelIn }}>
-            <div className="p-4 text-sm leading-relaxed h-full">{children}</div>
+        isAuto ? (
+          // Auto-size: nech okno růst dle obsahu, jen omez vnitřek max-height a scrolluj
+          <div className="p-2 w-full">
+            <div
+              className="w-full bg-white overflow-auto"
+              style={{
+                boxShadow: bevelIn,
+                maxHeight: Math.max(
+                  160,
+                  (window.visualViewport?.height ?? window.innerHeight) - TASKBAR_SAFE - TITLEBAR_H - 16
+                ),
+              }}
+            >
+              <div className="p-4 text-sm leading-relaxed">{children}</div>
+            </div>
           </div>
-        </div>
+        ) : (
+          // Původní fixní varianta
+          <div className="p-2 w-full" style={{ height: `calc(100% - ${TITLEBAR_H}px)` }}>
+            <div
+              className="w-full h-full bg-white"
+              style={{
+                boxShadow: bevelIn,
+                overflow: panelScrollInside ? 'hidden' : 'auto', // ← změna
+              }}
+            >
+              <div className="p-4 text-sm leading-relaxed h-full">{children}</div>
+            </div>
+          </div>
+        )
       ) : (
-        <div className="w-full h-[calc(100%-24px)]">{children}</div>
+        // edge: obsah zabere celé okno (žádný vnitřní bílý panel)
+        <div className="w-full h-full">{children}</div>
       )}
     </div>
   );
 };
 
 const Taskbar: React.FC<{
-  items: { id: string; title: string; active: boolean; minimized: boolean }[];
-  onClickItem: (id: string) => void;
+  items: { id: AppId; title: string; active: boolean; minimized: boolean }[];
+  onClickItem: (id: AppId) => void; // toggle minimize/restore
 }> = ({ items, onClickItem }) => (
-  <div className="fixed bottom-0 left-0 right-0 h-8 flex items-center gap-2 px-2"
-    style={{ background: WIN95.face, boxShadow: `0 -1px ${WIN95.dark}, inset 1px 1px ${WIN95.light}, inset -1px -1px ${WIN95.dark}` }}>
-    <button className="h-6 px-3 bg-[#bdbdbd] border border-black text-sm font-semibold" style={{ boxShadow: bevelOut }}>Start</button>
+  <div
+    className="fixed bottom-0 left-0 right-0 h-8 flex items-center gap-2 px-2"
+    style={{
+      background: WIN95.face,
+      boxShadow: `0 -1px ${WIN95.dark}, inset 1px 1px ${WIN95.light}, inset -1px -1px ${WIN95.dark}`
+    }}
+  >
+    <button className="h-6 px-3 bg-[#bdbdbd] border border-black text-sm font-semibold" style={{ boxShadow: bevelOut }}>
+      Start
+    </button>
     <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-      {items.map(it => (
-        <button key={it.id} onClick={() => onClickItem(it.id)}
+      {items.map((it) => (
+        <button
+          key={it.id as unknown as string}
+          onClick={() => onClickItem(it.id)}
           className={`h-6 px-2 bg-[#bdbdbd] border border-black text-xs ${it.active && !it.minimized ? 'font-bold' : ''}`}
           style={{ boxShadow: (it.active && !it.minimized) ? bevelIn : bevelOut, opacity: it.minimized ? 0.85 : 1 }}
-          title={it.minimized ? 'Restore' : 'Minimize'}>
+          title={it.minimized ? 'Restore' : 'Minimize'}
+        >
           {it.title}
         </button>
       ))}
     </div>
-    <div className="h-6 px-3 grid place-items-center text-xs" style={{ background: '#bdbdbd', boxShadow: bevelIn, minWidth: 68 }}>
+    <div
+      className="h-6 px-3 grid place-items-center text-xs"
+      style={{ background: '#bdbdbd', boxShadow: bevelIn, minWidth: 68 }}
+    >
       {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
     </div>
   </div>
@@ -226,7 +331,7 @@ const Taskbar: React.FC<{
 type DesktopWindowManagerProps = {
   open: AppId[];
   zOrder: AppId[];
-  titles: Record<string, string>;
+  titles: Titles;
   windowPos?: WindowPos;
   onFocus: (id: AppId) => void;
   onClose: (id: AppId) => void;
@@ -237,16 +342,20 @@ type DesktopWindowManagerProps = {
   aboutFullscreenContent?: React.ReactNode;
 };
 
-// ==== import pro post okna ====
-import type { BlogPost } from "../pages/BlogSection";
-import { PostWindow } from "../desktop/PostWindow";
-
-// ========== MANAGER ==========
 export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
-  open, zOrder, titles, windowPos, onFocus, onClose, onMinimize, onMaximize,
-  renderContent, onAboutFullscreenChange, aboutFullscreenContent,
+  open,
+  zOrder,
+  titles,
+  windowPos,
+  onFocus,
+  onClose,
+  onMinimize,
+  onMaximize,
+  renderContent,
+  onAboutFullscreenChange,
+  aboutFullscreenContent,
 }) => {
-  const zFor = useCallback((id: string) => 100 + zOrder.indexOf(id as any), [zOrder]);
+  const zFor = useCallback((id: AppId) => 100 + zOrder.indexOf(id), [zOrder]);
 
   const defaultPos: WindowPos = useMemo(() => ({
     about: { left: 220, top: 120 },
@@ -260,29 +369,45 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
   }), []);
   const wpos = windowPos ?? defaultPos;
 
-  // ====== ABOUT loader (beze změny) ======
+  // ====== ABOUT loading/fullscreen logika (beze změny) ======
   const [aboutLoading, setAboutLoading] = useState(false);
   const [aboutFullscreen, setAboutFullscreen] = useState(false);
   const [aboutLoadPct, setAboutLoadPct] = useState(0);
-  const timersRef = useRef<{ interval?: number; timeout?: number }>({}); const startedRef = useRef(false);
+
+  const timersRef = useRef<{ interval?: number; timeout?: number }>({});
+  const startedRef = useRef(false);
+
   useEffect(() => {
-    const isAboutOpen = open.includes('about' as any);
+    const isAboutOpen = open.includes('about');
+
     if (isAboutOpen && !aboutFullscreen && !startedRef.current) {
-      startedRef.current = true; setAboutLoading(true); setAboutLoadPct(0);
+      startedRef.current = true;
+      setAboutLoading(true);
+      setAboutLoadPct(0);
+
       const start = Date.now();
       timersRef.current.interval = window.setInterval(() => {
-        const elapsed = Date.now() - start; const pct = Math.min(100, Math.round((elapsed / 900) * 100));
+        const elapsed = Date.now() - start;
+        const pct = Math.min(100, Math.round((elapsed / 900) * 100));
         setAboutLoadPct(pct);
       }, 50);
+
       timersRef.current.timeout = window.setTimeout(() => {
         if (timersRef.current.interval) clearInterval(timersRef.current.interval);
-        setAboutLoadPct(100); setAboutLoading(false); setAboutFullscreen(true); onAboutFullscreenChange?.(true);
+        setAboutLoadPct(100);
+        setAboutLoading(false);
+        setAboutFullscreen(true);
+        onAboutFullscreenChange?.(true);
       }, 1000);
     }
+
     if (!isAboutOpen && (aboutLoading || aboutFullscreen || startedRef.current)) {
       if (timersRef.current.interval) clearInterval(timersRef.current.interval);
       if (timersRef.current.timeout) clearTimeout(timersRef.current.timeout);
-      startedRef.current = false; setAboutLoading(false); setAboutFullscreen(false); setAboutLoadPct(0);
+      startedRef.current = false;
+      setAboutLoading(false);
+      setAboutFullscreen(false);
+      setAboutLoadPct(0);
       onAboutFullscreenChange?.(false);
     }
   }, [open, aboutFullscreen, onAboutFullscreenChange, aboutLoading]);
@@ -292,127 +417,280 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && open.length) {
         const top = zOrder[zOrder.length - 1];
-        if (top) handleClose(top as any);
+        if (top) handleClose(top);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, zOrder]);
 
-  // === Minimalizace řízená zde (beze změny pro standardní okna) ===
-  const [minimized, setMinimized] = useState<Set<string>>(new Set());
-  const handleMinimize = (id: string) => setMinimized(prev => new Set(prev).add(id));
-  const restoreFromMinimized = (id: string) => {
-    setMinimized(prev => { const next = new Set(prev); next.delete(id); return next; });
-    onFocus(id as any);
-  };
-  const toggleFromTaskbar = (id: string) => {
+  // === Minimalizace: udržujeme lokální set minimalizovaných id ===
+  const [minimized, setMinimized] = useState<Set<AppId>>(new Set());
+
+  const handleMinimize = (id: AppId) => {
     setMinimized(prev => {
       const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); onFocus(id as any); }
-      else { next.add(id); }
+      next.add(id);
       return next;
     });
   };
-  const handleClose = (id: string) => {
-    setMinimized(prev => { if (!prev.size) return prev; const next = new Set(prev); next.delete(id); return next; });
-    onClose(id as any);
-    // pro dynamická post okna zavřeme i jejich registr (níže)
-    if (id.startsWith("post:")) {
-      setPostWins(prev => {
-        const n = { ...prev }; delete n[id]; return n;
-      });
-    }
+
+  const restoreFromMinimized = (id: AppId) => {
+    setMinimized(prev => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    onFocus(id);
   };
 
-  // === POST WINDOWS (dynamická okna) =====================================
-  const [postWins, setPostWins] = useState<Record<string, { post: BlogPost; title: string }>>({});
-  const openPostWindow = (post: BlogPost) => {
-    const id = `post:${post.id}`;
-    setPostWins(prev => ({ ...prev, [id]: { post, title: post.title } }));
-    // „otevřít“ přes tvůj nadřazený state: zavoláme focus (zOrder) a odemkneme z Taskbaru
-    restoreFromMinimized(id);
-    onFocus(id as any);
+  const toggleFromTaskbar = (id: AppId) => {
+    setMinimized(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        onFocus(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
-  // taskbar seznam = standardní + dynamické post okna
-  const taskbarItems = [
-    ...open.map(id => ({ id: id as string, title: titles[id], active: id === (zOrder[zOrder.length - 1] as any), minimized: minimized.has(id as any) })),
-    ...Object.keys(postWins).map(id => ({ id, title: postWins[id].title, active: (id === (zOrder[zOrder.length - 1] as any)), minimized: minimized.has(id) })),
-  ];
-
-  // pozice pro dynamická okna (pokud není v windowPos)
-  const posFor = (id: string) => {
-    if (wpos[id]) return wpos[id];
-    // jednoduchý „fanning“ podle hash
-    const i = Math.abs([...id].reduce((s, c) => s + c.charCodeAt(0), 0)) % 6;
-    return { left: 220 + i * 40, top: 120 + i * 40 };
+  const handleClose = (id: AppId) => {
+    setMinimized(prev => {
+      if (!prev.size) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    onClose(id);
   };
 
-  // =======================================================================
-
-  // RetroLoading – (zkráceno) …
+  // Retro loader pro About
   const RetroLoading: React.FC = () => (
-    <div className="w-full h-full rounded-[2px] overflow-hidden" style={{ backgroundColor: '#000' }}>
-      <div className="w-full h-full flex items-center justify-center text-green-400 font-mono">LOADING…</div>
+    <div
+      className="w-full h-full rounded-[2px] overflow-hidden"
+      style={{
+        backgroundColor: '#000',
+        backgroundImage: `
+          radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.95) 100%),
+          repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 2px, transparent 4px)
+        `,
+        imageRendering: 'pixelated',
+      }}
+    >
+      <div className="w-full h-full flex flex-col items-center justify-center text-green-400 font-mono px-4">
+        <div className="text-center mb-6">
+          <div className="text-[13px] tracking-wider">BITS&BYTES ENGINE v1.0</div>
+          <div className="text-[11px] opacity-70 mt-1">© 1998–2003 BB Studio</div>
+        </div>
+        <div className="mb-3 text-[13px]">
+          <span className="mr-2">LOADING</span>
+          <span className="inline-block w-1 h-4 align-middle animate-pulse">▮</span>
+        </div>
+        <div className="w-[min(520px,90%)] border border-green-500 p-1" style={{ boxShadow: '0 0 8px rgba(0,255,0,0.25) inset' }}>
+          <div
+            className="h-4 bg-green-500"
+            style={{
+              width: `${aboutLoadPct}%`,
+              transition: 'width 80ms linear',
+              boxShadow: '0 0 6px rgba(0,255,0,0.7)',
+            }}
+          />
+        </div>
+        <div className="mt-2 text-[11px] opacity-80">
+          {aboutLoadPct < 100 ? `Loading assets… ${aboutLoadPct}%` : 'Ready.'}
+        </div>
+        <div className="mt-5 text-[10px] leading-relaxed opacity-80 text-center">
+          <div>INIT VIDEO… OK</div>
+          <div>INIT AUDIO… OK</div>
+          <div>INIT INPUT… OK</div>
+          <div>BUILD SCENE… {aboutLoadPct >= 80 ? 'OK' : '…'}</div>
+        </div>
+      </div>
     </div>
   );
 
-  // === RENDER =============================================================
+  /* === Externí okno: blogpost (spravované managerem) === */
+  const [blogPostExt, setBlogPostExt] = useState<{
+    open: boolean;
+    minimized: boolean;
+    title: string;
+    content: React.ReactNode | null;
+  }>(() => ({ open: false, minimized: false, title: 'Blog Post', content: null }));
+
+  // konstantní ID mimo původní AppId – přetypujeme jen lokálně
+  const BLOGPOST_ID = 'blogpost' as unknown as AppId;
+  const blogpostZ = 100 + zOrder.length + 1;
+
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const ev = e as CustomEvent<{ title: string; node: React.ReactNode }>;
+      setBlogPostExt({ open: true, minimized: false, title: ev.detail.title, content: ev.detail.node });
+    };
+    const onMin = () => setBlogPostExt(cur => cur.open ? ({ ...cur, minimized: true }) : cur);
+    const onRes = () => setBlogPostExt(cur => cur.open ? ({ ...cur, minimized: false }) : cur);
+    const onClose = () => setBlogPostExt({ open: false, minimized: false, title: 'Blog Post', content: null });
+
+    window.addEventListener('BB_OPEN_BLOGPOST', onOpen as EventListener);
+    window.addEventListener('BB_MINIMIZE_BLOGPOST', onMin as EventListener);
+    window.addEventListener('BB_RESTORE_BLOGPOST', onRes as EventListener);
+    window.addEventListener('BB_CLOSE_BLOGPOST', onClose as EventListener);
+    return () => {
+      window.removeEventListener('BB_OPEN_BLOGPOST', onOpen as EventListener);
+      window.removeEventListener('BB_MINIMIZE_BLOGPOST', onMin as EventListener);
+      window.removeEventListener('BB_RESTORE_BLOGPOST', onRes as EventListener);
+      window.removeEventListener('BB_CLOSE_BLOGPOST', onClose as EventListener);
+    };
+  }, []);
+
+  // položky do taskbaru (původní + externí)
+  const taskbarItems: { id: AppId; title: string; active: boolean; minimized: boolean }[] = [
+    ...open.map((id) => ({
+      id,
+      title: titles[id],
+      active: id === zOrder[zOrder.length - 1],
+      minimized: minimized.has(id),
+    })),
+    ...(blogPostExt.open ? [{
+      id: BLOGPOST_ID,
+      title: blogPostExt.title,
+      active: true,
+      minimized: blogPostExt.minimized,
+    }] : []),
+  ];
+
+  const toggleExternalFromTaskbar = (id: AppId) => {
+    if (id !== BLOGPOST_ID) return;
+    if (!blogPostExt.open) return;
+    setBlogPostExt(cur => ({ ...cur, minimized: !cur.minimized }));
+  };
+
   return (
-    <WindowBusCtx.Provider value={{ openPostWindow }}>
-      <>
-        {/* Standardní okna (podle props.open) */}
-        {open.map((id) => {
-          if (id === 'about' as any && aboutFullscreen) return null;
-          if (id === 'about' as any && aboutLoading) {
-            if (minimized.has('about')) return null;
-            return (
-              <Win95Window key="about-loading" id="about" title={titles['about']} left={posFor('about').left} top={posFor('about').top}
-                z={zFor('about')} onFocus={onFocus as any} onClose={handleClose} onMinimize={handleMinimize} onMaximize={onFocus as any} frame="panel" enforce70={false}>
-                <div className="w-full h-[360px]"><RetroLoading /></div>
-              </Win95Window>
-            );
-          }
-          if (minimized.has(id as any)) return null;
-          const raw = renderContent(id);
-          const enhanced = React.isValidElement(raw) ? React.cloneElement(raw as any, { embedded: true, onRequestClose: () => handleClose(id as any) }) : raw;
+    <>
+      {/* Okna */}
+      {open.map((id) => {
+        // ABOUT fullscreen stage anebo loader
+        if (id === 'about' && aboutFullscreen) return null;
 
-          const p = posFor(id as string);
+        if (id === 'about' && aboutLoading) {
+          if (minimized.has('about')) return null;
           return (
-            <Win95Window key={id as string} id={id as string} title={titles[id]} left={p.left} top={p.top}
-              z={zFor(id as string)} onFocus={onFocus as any} onClose={handleClose} onMinimize={handleMinimize} onMaximize={onFocus as any}
-              frame="edge" enforce70={id !== ('about' as any)}>
-              <div className="w-full h-[calc(100%-24px)]"><div className="w-full h-full">{enhanced}</div></div>
+            <Win95Window
+              key="about-loading"
+              id="about"
+              title={titles['about']}
+              left={wpos['about'].left}
+              top={wpos['about'].top}
+              z={zFor('about')}
+              onFocus={onFocus}
+              onClose={handleClose}
+              onMinimize={handleMinimize}
+              onMaximize={onFocus}
+              frame="panel" // loader v panelu
+              enforce70={false}
+            >
+              <div className="w-full h-[360px]">
+                <RetroLoading />
+              </div>
             </Win95Window>
           );
-        })}
+        }
 
-        {/* Dynamická POST okna */}
-        {Object.entries(postWins).map(([id, data]) => {
-          if (minimized.has(id)) return null;
-          const p = posFor(id);
-          return (
-            <Win95Window key={id} id={id} title={data.title} left={p.left} top={p.top}
-              z={zFor(id)} onFocus={onFocus as any} onClose={handleClose} onMinimize={handleMinimize} onMaximize={onFocus as any}
-              frame="edge" enforce70>
-              <PostWindow post={data.post} t={(k: string) => k as any} />
-            </Win95Window>
-          );
-        })}
+        if (minimized.has(id)) return null;
 
-        {/* ABOUT fullscreen stage */}
-        {aboutFullscreen && (
-          <div className="fixed inset-0 z-[9999] bg-black" role="dialog" aria-label={`${titles['about']} Fullscreen`}>
-            {aboutFullscreenContent ?? <div className="w-full h-full grid place-items-center text-white">About Fullscreen</div>}
-          </div>
-        )}
+        // Render obsahu okna
+        const raw = renderContent(id);
 
-        <Taskbar
-          items={taskbarItems}
-          onClickItem={(id) => toggleFromTaskbar(id)}
-        />
-      </>
-    </WindowBusCtx.Provider>
+        // ✨ Auto-inject: pokud je to React element, přidej embedded + onRequestClose
+        const enhanced =
+          React.isValidElement(raw)
+            ? React.cloneElement(raw as any, {
+              embedded: true,
+              onRequestClose: () => handleClose(id),
+            })
+            : raw;
+
+        return (
+          <Win95Window
+            key={id}
+            id={id}
+            title={titles[id]}
+            left={wpos[id].left}
+            top={wpos[id].top}
+            z={zFor(id)}
+            onFocus={onFocus}
+            onClose={handleClose}
+            onMinimize={handleMinimize}
+            onMaximize={onFocus}
+            frame="edge" // ⚡️ běžné stránky zabírají celé okno (žádný vnitřní panel)
+            enforce70={id !== 'about'} // 🔸 70% viewportu pro všechno kromě ABOUT
+          >
+            {/* Obsah stránky vyplní okno */}
+            <div className="w-full h-[calc(100%-24px)]">
+              {/* Pozn.: h-… nechává trochu místa oproti titlebaru Win95Window, aby embedded layouty seděly */}
+              <div className="w-full h-full">{enhanced}</div>
+            </div>
+          </Win95Window>
+        );
+      })}
+
+      {/* ABOUT fullscreen stage */}
+      {aboutFullscreen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black"
+          style={{ imageRendering: 'pixelated' }}
+          role="dialog"
+          aria-label={`${titles['about']} Fullscreen`}
+        >
+          {aboutFullscreenContent ?? (
+            <div className="w-full h-full grid place-items-center text-white">
+              <div className="text-center opacity-80">
+                <div className="text-2xl font-bold mb-2">{titles['about']} – Fullscreen</div>
+                <div>Sem vlož &lt;AboutSection /&gt; (hra)</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Externí okno (blogpost) – stejné chování jako ostatní, ale autoSize */}
+      {blogPostExt.open && !blogPostExt.minimized && (
+        <Win95Window
+          id={BLOGPOST_ID}
+          title={blogPostExt.title}
+          left={wpos['blog']?.left ?? 360}
+          top={wpos['blog']?.top ?? 220}
+          z={blogpostZ}
+          onFocus={() => { }}
+          onClose={() => window.dispatchEvent(new Event('BB_CLOSE_BLOGPOST'))}
+          onMinimize={() => window.dispatchEvent(new Event('BB_MINIMIZE_BLOGPOST'))}
+          onMaximize={() => { }}
+          frame="panel"
+          enforce70={false}
+          autoSize
+          panelScrollInside
+        >
+          {React.isValidElement(blogPostExt.content)
+            ? React.cloneElement(blogPostExt.content as any, {
+              embedded: true,
+              onRequestClose: () => window.dispatchEvent(new Event('BB_CLOSE_BLOGPOST')),
+            })
+            : blogPostExt.content}
+        </Win95Window>
+      )}
+
+      <Taskbar
+        items={taskbarItems}
+        onClickItem={(id) => {
+          // externí položka v taskbaru
+          if (id === (BLOGPOST_ID as AppId)) return toggleExternalFromTaskbar(id);
+          // běžná okna
+          toggleFromTaskbar(id);
+        }}
+      />
+    </>
   );
 };
