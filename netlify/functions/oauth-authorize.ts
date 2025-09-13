@@ -1,20 +1,16 @@
-import type { Handler, HandlerEvent } from "@netlify/functions";
+import type { Handler } from "@netlify/functions";
 
-/** Vypočítá základní URL webu ze záhlaví (funguje i bez env SITE_URL) */
-function getSiteUrl(event: HandlerEvent): string {
-  const envUrl = process.env.SITE_URL;
-  if (envUrl) return envUrl.replace(/\/+$/, "");
-  const proto = (event.headers["x-forwarded-proto"] || "https") as string;
-  const host = (event.headers["x-forwarded-host"] || event.headers.host || "").toString();
-  return `${proto}://${host}`;
+function getBaseUrl() {
+  const env = process.env.SITE_URL;
+  if (!env) throw new Error("Missing SITE_URL env var");
+  return env.replace(/\/+$/, "");
 }
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = async () => {
   const clientId = process.env.GITHUB_CLIENT_ID;
-  if (!clientId) {
-    return { statusCode: 500, body: "Missing GITHUB_CLIENT_ID env var" };
-  }
-  const redirectUri = `${getSiteUrl(event)}/.netlify/functions/oauth-callback`;
+  if (!clientId) return { statusCode: 500, body: "Missing GITHUB_CLIENT_ID env var" };
+
+  const redirectUri = `${getBaseUrl()}/.netlify/functions/oauth-callback`;
   const scope = "repo,user:email";
 
   const gh = `https://github.com/login/oauth/authorize` +
@@ -22,9 +18,5 @@ export const handler: Handler = async (event) => {
              `&redirect_uri=${encodeURIComponent(redirectUri)}` +
              `&scope=${encodeURIComponent(scope)}`;
 
-  return {
-    statusCode: 302,
-    headers: { Location: gh },
-    body: "",
-  };
+  return { statusCode: 302, headers: { Location: gh }, body: "" };
 };
