@@ -102,12 +102,15 @@ type Props = {
   bottomOffset?: number;
   /** vertikální centrování na střed */
   centered?: boolean;
+  /** ref na vnější wrapper pro přesné měření pozice/velikosti z DesktopSection */
+  containerRef?: React.RefObject<HTMLDivElement>;
 };
 
 const ClippyAssistant: React.FC<Props> = ({
   rightOffset,
   bottomOffset = 40,
   centered = true,
+  containerRef, // ← pro měření zvenku
 }) => {
   const { t, language } = useTranslation();
 
@@ -120,7 +123,7 @@ const ClippyAssistant: React.FC<Props> = ({
     return fromI18n.length ? fromI18n : DEFAULT_TIPS;
   }, [t, language]);
 
-  // === ZMĚNA 1: Východzí stav otevřené poznámky ===
+  // Výchozí stav sticky poznámky otevřený
   const [showTip, setShowTip] = useState(true);
   const [tipIndex, setTipIndex] = useState(0);
 
@@ -143,6 +146,7 @@ const ClippyAssistant: React.FC<Props> = ({
     <>
       {/* Clippy */}
       <div
+        ref={containerRef} // ← důležité pro getBoundingClientRect v DesktopSection
         className="absolute select-none"
         role="button"
         tabIndex={0}
@@ -202,7 +206,7 @@ const ClippyAssistant: React.FC<Props> = ({
           rightOffset={rightOffset}
           centered={centered}
           bottomOffset={bottomOffset}
-          onClose={closeTip} // === ZMĚNA 2: křížek zavře poznámku ===
+          onClose={closeTip}
         />
       )}
     </>
