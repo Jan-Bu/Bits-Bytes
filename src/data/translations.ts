@@ -257,6 +257,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
     /* ===== Contact ===== */
     contact: {
       title: 'Contact',
+      description: "Ready to bring your project to life? Get in touch and let's make it happen.",
       tabs: { email: 'E-mail', phone: 'Phone', info: 'Info' },
 
       form: {
@@ -508,12 +509,12 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
       web: {
         title: 'Web Development',
         lead:
-          'Custom websites with clean code, fast load, and a design that fits your brand — not the other way around.',
+          "Custom-made websites from sketch to launch. Already have a design? Great. Need one? We've got you covered. Whether it's a clear plan or a rough idea, we turn it into a working website.",
         bullets: {
-          i1: 'React/TypeScript front-ends with pixel-perfect details',
-          i2: 'Responsive by default, accessible by design',
-          i3: 'Performance first: image strategy, lazy-loading, code-splitting',
-          i4: "CMS or headless hookup when you need it, not when you don't",
+          i1: 'Custom design or bring your own',
+          i2: 'From rough idea to working website',
+          i3: 'Responsive, fast, and SEO-ready',
+          i4: 'One place for design and development',
         },
         showcaseTitle: 'Selected Work',
         showcase: {
@@ -542,42 +543,43 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
             preview: '/previews/falafelova.webp',
           },
         },
-        seo: {
-          title: 'SEO',
-          lead:
-            'Real-world SEO without buzzwords — technical health, content that makes sense, and pages that get found.',
-          bullets: {
-            i1: 'Technical SEO: structure, meta, schema, sitemap, Core Web Vitals',
-            i2: 'On-page: content hierarchy, internal links, intent-driven copy',
-            i3: 'Performance: lighthouse-friendly build, caching & CDN',
-            i4: 'Analytics: privacy-minded tracking and clear reporting',
-          },
-          cta: 'We’ll find quick wins and plan the long game.',
+        cta: "Want a web that actually converts? Let's talk.",
+      },
+      seo: {
+        title: 'SEO',
+        lead:
+          "Top-tier SEO that brings your website to life in search engines. We make sure you're visible, fast, and found — without the buzzwords or tricks. Just real results.",
+        bullets: {
+          i1: 'Visible in search engines',
+          i2: 'Fast websites that rank',
+          i3: 'No buzzwords, just results',
+          i4: 'Technical health + content strategy',
         },
-        branding: {
-          title: 'Brand Identity',
-          lead:
-            'From logo and colors to full brand manual. One look. One voice. Everywhere.',
-          bullets: {
-            i1: 'Logo systems (primary/secondary/mark)',
-            i2: 'Color & type scales that survive the real world',
-            i3: 'UI kits for web & socials',
-            i4: 'Brand guide you’ll actually use',
-          },
-          cta: 'Start with a mini-identity or go full brand manual.',
+        cta: "We'll find quick wins and plan the long game.",
+      },
+      branding: {
+        title: 'Brand Identity',
+        lead:
+          'We build brands from the ground up. From logo and colors to fonts and full brand manuals. We also design printed materials like catalogs, banners, or packaging — and get them printed too.',
+        bullets: {
+          i1: 'Logo to full brand manual',
+          i2: 'Colors, fonts, and style guides',
+          i3: 'Print materials design',
+          i4: 'We can print it too',
         },
-        print: {
-          title: 'Print & Production',
-          lead:
-            'Design and printing under one roof — from business cards to banners and packaging.',
-          bullets: {
-            i1: 'Business cards, flyers, stickers, posters, roll-ups',
-            i2: 'Catalogs, brochures, booklets',
-            i3: 'Packaging mockups and production files',
-            i4: 'Large-format & outdoor ads',
-          },
-          cta: 'Send specs or just the goal — we’ll prep, print, and deliver.',
+        cta: 'Start with a mini-identity or go full brand manual.',
+      },
+      print: {
+        title: 'Print & Production',
+        lead:
+          'We handle the print side: business cards, flyers, posters, stickers, banners, packaging, catalogs, and more. Design and printing under one roof.',
+        bullets: {
+          i1: 'Business cards to banners',
+          i2: 'Catalogs, flyers, packaging',
+          i3: 'Design and printing together',
+          i4: 'From file to finished product',
         },
+        cta: "Send specs or just the goal — we'll prep, print, and deliver.",
       },
     },
   },
@@ -817,6 +819,7 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
 
     contact: {
       title: 'Kontakt',
+      description: 'Jste připraveni uvést váš projekt do života? Spojte se s námi a udělejme to společně.',
       tabs: { email: 'E-mail', phone: 'Telefon', info: 'Informace' },
 
       form: {
@@ -1068,12 +1071,12 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
       web: {
         title: 'Tvorba webu',
         lead:
-          'Weby na míru s čistým kódem, rychlým načítáním a designem, který sedí vaší značce — ne naopak.',
+          'Weby na míru od návrhu po spuštění. Máte vlastní grafiku? Super. Nemáte? Vymyslíme ji s vámi. Ať už přijdete s jasným plánem nebo jen nápadem, postavíme vám funkční web.',
         bullets: {
-          i1: 'Front-end v React/TypeScript s pixel-precizností',
-          i2: 'Responzivně od základu, přístupnost jako standard',
-          i3: 'Výkon na prvním místě: obrázky, lazy-loading, code-split',
-          i4: 'Napojení na CMS/headless, když to dává smysl',
+          i1: 'Vlastní design nebo přineste svůj',
+          i2: 'Od nápadu k funkčnímu webu',
+          i3: 'Responzivní, rychlý, SEO-ready',
+          i4: 'Design i vývoj na jednom místě',
         },
         showcaseTitle: 'Vybrané projekty',
         showcase: {
@@ -1101,42 +1104,42 @@ Každý projekt si zaslouží trochu Bitovy preciznosti a Byteovy kreativity.`,
             href: 'https://falafe-lova.cz',
             preview: '/previews/falafelova.webp',
           },
-          cta: 'Chcete web, který opravdu konvertuje? Napište nám.',
         },
+        cta: 'Chcete web, který opravdu konvertuje? Napište nám.',
       },
       seo: {
         title: 'SEO',
         lead:
-          'SEO do praxe — technický stav, smysluplný obsah a stránky, které lidé najdou.',
+          'Špičkové SEO, které vás dostane nahoru. Bez kouzel a triků — jen rychlý web a výsledky ve vyhledávání. Aby vás našli ti, co vás hledají.',
         bullets: {
-          i1: 'Technické SEO: struktura, meta, schema, sitemap, Vitals',
-          i2: 'On-page: hierarchie obsahu, interní prolinkování, záměr',
-          i3: 'Výkon: lighthouse-friendly build, cache & CDN',
-          i4: 'Analytika: respekt k soukromí a srozumitelné reporty',
+          i1: 'Viditelnost ve vyhledávačích',
+          i2: 'Rychlé weby, které se najdou',
+          i3: 'Bez keců, jen výsledky',
+          i4: 'Technický základ + strategie obsahu',
         },
         cta: 'Najdeme rychlá zlepšení a postavíme dlouhodobý plán.',
       },
       branding: {
         title: 'Brand identita',
         lead:
-          'Od loga a barev po kompletní manuál. Jeden vzhled. Jeden hlas. Všude.',
+          'Navrhujeme značky od loga po katalog. Vybereme barvy, písmo i styl, vytvoříme brand manuál i tiskoviny. A pokud budete chtít, rovnou je i vytiskneme.',
         bullets: {
-          i1: 'Logo systémy (primární/sekundární/znak)',
-          i2: 'Barevnost a písmo, které přežijí realitu',
-          i3: 'UI kity pro web i sítě',
-          i4: 'Brand manuál, který budete používat',
+          i1: 'Od loga po kompletní manuál',
+          i2: 'Barvy, písmo a stylové směrnice',
+          i3: 'Design tiskových materiálů',
+          i4: 'Rovnou to i vytiskneme',
         },
         cta: 'Začněme mini identitou, nebo rovnou celým manuálem.',
       },
       print: {
         title: 'Tisk & Produkce',
         lead:
-          'Design i tisk na jednom místě — od vizitek po bannery a obaly.',
+          'Zvládáme i tisk: vizitky, letáky, plakáty, samolepky, bannery, obaly, katalogy a další. Design i tisk na jednom místě.',
         bullets: {
-          i1: 'Vizitky, letáky, samolepky, plakáty, roll-upy',
-          i2: 'Katalogy, brožury, sešity',
-          i3: 'Obalové návrhy a podklady pro výrobu',
-          i4: 'Velkoformát & outdoor',
+          i1: 'Od vizitek po bannery',
+          i2: 'Katalogy, letáky, obaly',
+          i3: 'Design i tisk pohromadě',
+          i4: 'Od souboru k hotovému produktu',
         },
         cta: 'Pošlete podklady nebo cíl — připravíme, vytiskneme, doručíme.',
       },

@@ -26,7 +26,7 @@ const RetroBrowserCard: React.FC<Props> = ({ item, accent = 'green' }) => {
   return (
     <article
       className={[
-        'relative rounded-lg overflow-hidden bg-gray-900 border-2',
+        'relative overflow-hidden bg-gray-900 border-2 h-full flex flex-col',
         a.border,
         'shadow-lg transition-transform duration-300 hover:scale-[1.02]',
         a.hoverShadow,
@@ -66,7 +66,7 @@ const RetroBrowserCard: React.FC<Props> = ({ item, accent = 'green' }) => {
       </header>
 
       {/* Preview */}
-      <div className="aspect-[16/10] relative bg-black">
+      <div className="flex-1 relative bg-black min-h-0">
         {item.preview ? (
           <img
             src={item.preview}

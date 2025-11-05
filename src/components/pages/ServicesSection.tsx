@@ -1,7 +1,6 @@
 // src/components/pages/ServicesSection.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Code, Search, Palette, Printer, TrendingUp } from 'lucide-react';
-import { translations } from '../../data/translations';
+import { Code, Search, Palette, Printer, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import ServiceCard from '../services/ServiceCard';
 import { accentPresets, Accent } from '../services/theme';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,7 +9,6 @@ import type { AppId } from '../desktop/types';
 
 type Props = {
   t: (key: string) => string;
-  lang?: 'cs' | 'en';
   embedded?: boolean;
   onRequestClose?: () => void;
   onOpenApp?: (id: AppId) => void;
@@ -19,9 +17,10 @@ type Props = {
 
 const NAV_BG = 'rgb(17 24 39)'; // Tailwind bg-gray-900 (#111827)
 
-const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, onOpenApp, onOpenWeb }) => {
+const ServicesSection: React.FC<Props> = ({ t, embedded = false, onOpenApp, onOpenWeb }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<'hero' | 'web' | 'seo' | 'branding' | 'print'>('hero');
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   // === vnitřní skrolovací kontejner jen při embedded ===
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -93,14 +92,35 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
     return () => clearTimeout(start);
   }, [fullHeadline]);
 
-  // Showcase items for WEB section (from translations object)
+  // Showcase items for WEB section (using t() for reactive translations)
   const showcaseItems = useMemo<ProjectItem[]>(() => {
-    const s = ((translations as any)[lang]?.ServicesSection?.web?.showcase ?? {}) as Record<
-      string,
-      { title: string; note?: string; href?: string; preview?: string }
-    >;
-    return Object.values(s);
-  }, [lang]);
+    return [
+      {
+        title: t('ServicesSection.web.showcase.s1.title'),
+        note: t('ServicesSection.web.showcase.s1.note'),
+        href: 'https://pragoline.cz',
+        preview: '/previews/pragoline.webp',
+      },
+      {
+        title: t('ServicesSection.web.showcase.s2.title'),
+        note: t('ServicesSection.web.showcase.s2.note'),
+        href: 'https://decorartstudio.netlify.app',
+        preview: '/previews/decorart.webp',
+      },
+      {
+        title: t('ServicesSection.web.showcase.s3.title'),
+        note: t('ServicesSection.web.showcase.s3.note'),
+        href: 'https://hawks-security.com',
+        preview: '/previews/hawks.webp',
+      },
+      {
+        title: t('ServicesSection.web.showcase.s4.title'),
+        note: t('ServicesSection.web.showcase.s4.note'),
+        href: 'https://falafe-lova.cz',
+        preview: '/previews/falafelova.webp',
+      },
+    ];
+  }, [t]);
 
   // === Scroll spy – používáme buď window, nebo vnitřní scroller ===
   useEffect(() => {
@@ -376,37 +396,120 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
                 <p className="text-gray-300 max-w-3xl mx-auto">{t('ServicesSection.web.lead')}</p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                <ServiceCard
-                  icon={Code}
-                  title={t('ServicesSection.web.title')}
-                  description={t('ServicesSection.web.lead')}
-                  features={[
-                    t('ServicesSection.web.bullets.i1'),
-                    t('ServicesSection.web.bullets.i2'),
-                    t('ServicesSection.web.bullets.i3'),
-                    t('ServicesSection.web.bullets.i4'),
-                  ]}
-                  items={showcaseItems}
-                  accent="green"
-                  learnMoreLabel={t('ServicesSection.web.cta')}
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {showcaseItems.map((it, i) => {
-                    const onOpen = (e: React.MouseEvent) => {
-                      if (embedded && onOpenWeb && it.href) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onOpenWeb(it.href, it.title);
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="flex flex-col">
+                  <ServiceCard
+                    icon={Code}
+                    title={t('ServicesSection.web.title')}
+                    description={t('ServicesSection.web.lead')}
+                    features={[
+                      t('ServicesSection.web.bullets.i1'),
+                      t('ServicesSection.web.bullets.i2'),
+                      t('ServicesSection.web.bullets.i3'),
+                      t('ServicesSection.web.bullets.i4'),
+                    ]}
+                    accent="green"
+                    learnMoreLabel={t('ServicesSection.web.cta')}
+                    onLearnMoreClick={() => {
+                      if (embedded && onOpenApp) {
+                        onOpenApp('contact');
                       }
-                    };
-                    return (
-                      <div key={i} onClick={onOpen} onMouseDown={(e) => e.button === 1 && onOpen(e)}>
-                        <RetroBrowserCard item={it} accent="green" />
-                      </div>
-                    );
-                  })}
+                    }}
+                  />
+                </div>
+
+                {/* Carousel */}
+                <div className="relative flex flex-col h-full min-h-[500px] lg:min-h-0">
+                  <div className="relative overflow-hidden h-full">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={carouselIndex}
+                        initial={{ opacity: 0, x: 100 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -100 }}
+                        transition={{ duration: 0.3 }}
+                        className="w-full h-full"
+                        onClick={(e: React.MouseEvent) => {
+                          const it = showcaseItems[carouselIndex];
+                          if (embedded && onOpenWeb && it?.href) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onOpenWeb(it.href, it.title);
+                          }
+                        }}
+                        onMouseDown={(e: React.MouseEvent) => {
+                          if (e.button === 1) {
+                            const it = showcaseItems[carouselIndex];
+                            if (embedded && onOpenWeb && it?.href) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onOpenWeb(it.href, it.title);
+                            }
+                          }
+                        }}
+                      >
+                        <RetroBrowserCard item={showcaseItems[carouselIndex]} accent="green" />
+                      </motion.div>
+                    </AnimatePresence>
+
+                    {/* Navigation arrows - always visible */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCarouselIndex((prev) => (prev === 0 ? showcaseItems.length - 1 : prev - 1));
+                      }}
+                      className={[
+                        'absolute left-2 top-1/2 -translate-y-1/2 z-20',
+                        'p-2 rounded-full border-2',
+                        'bg-gray-900/90 backdrop-blur-sm',
+                        accentPresets.green.border,
+                        accentPresets.green.text,
+                        'hover:scale-110 transition-all duration-300',
+                        accentPresets.green.hoverShadow,
+                      ].join(' ')}
+                      aria-label="Previous website"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCarouselIndex((prev) => (prev === showcaseItems.length - 1 ? 0 : prev + 1));
+                      }}
+                      className={[
+                        'absolute right-2 top-1/2 -translate-y-1/2 z-20',
+                        'p-2 rounded-full border-2',
+                        'bg-gray-900/90 backdrop-blur-sm',
+                        accentPresets.green.border,
+                        accentPresets.green.text,
+                        'hover:scale-110 transition-all duration-300',
+                        accentPresets.green.hoverShadow,
+                      ].join(' ')}
+                      aria-label="Next website"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+
+                    {/* Dot indicators - inside card, above the footer note */}
+                    <div className="absolute bottom-16 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
+                      {showcaseItems.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCarouselIndex(i);
+                          }}
+                          className={[
+                            'w-2.5 h-2.5 rounded-full border-2 transition-all pointer-events-auto',
+                            accentPresets.green.ring,
+                            i === carouselIndex ? `${accentPresets.green.dotBg} scale-125` : `${accentPresets.green.dotBgHover50}`,
+                          ].join(' ')}
+                          aria-label={`Go to website ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -418,33 +521,39 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
               <div className="text-center mb-10">
                 <Search className={['w-16 h-16 mx-auto mb-4', accentPresets.pink.text].join(' ')} />
                 <h2 className={['text-4xl font-bold mb-4 tracking-wider', accentPresets.pink.text, 'font-jersey'].join(' ')}>{t('ServicesSection.seo.title')}</h2>
+                <p className="text-gray-300 max-w-3xl mx-auto">{t('ServicesSection.seo.lead')}</p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                <div className="space-y-6">
-                  <p className="text-gray-300">{t('ServicesSection.seo.lead')}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {['i1', 'i2', 'i3', 'i4'].map(k => (
-                      <div key={k} className={['bg-gray-900 border-2 p-4', accentPresets.pink.border].join(' ')}>
-                        <div className="text-sm text-white/90">{t(`ServicesSection.seo.bullets.${k}`)}</div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="flex flex-col">
+                  <ServiceCard
+                    icon={Search}
+                    title={t('ServicesSection.seo.title')}
+                    description={t('ServicesSection.seo.lead')}
+                    features={[
+                      t('ServicesSection.seo.bullets.i1'),
+                      t('ServicesSection.seo.bullets.i2'),
+                      t('ServicesSection.seo.bullets.i3'),
+                      t('ServicesSection.seo.bullets.i4'),
+                    ]}
+                    accent="pink"
+                    learnMoreLabel={t('ServicesSection.seo.cta')}
+                    onLearnMoreClick={() => {
+                      if (embedded && onOpenApp) {
+                        onOpenApp('contact');
+                      }
+                    }}
+                  />
                 </div>
 
-                <ServiceCard
-                  icon={TrendingUp}
-                  title={t('ServicesSection.seo.title')}
-                  description={t('ServicesSection.seo.lead')}
-                  features={[
-                    t('ServicesSection.seo.bullets.i1'),
-                    t('ServicesSection.seo.bullets.i2'),
-                    t('ServicesSection.seo.bullets.i3'),
-                    t('ServicesSection.seo.bullets.i4'),
-                  ]}
-                  accent="pink"
-                  learnMoreLabel={t('ServicesSection.seo.cta')}
-                />
+                <div className="flex flex-col">
+                  <div className={['w-full h-full p-8 border-2', accentPresets.pink.border, 'bg-gray-900/50', 'flex flex-col items-center justify-center'].join(' ')}>
+                    <TrendingUp className={['w-32 h-32 mx-auto', accentPresets.pink.text].join(' ')} />
+                    <p className="text-center text-gray-300 mt-4 font-mono text-sm">
+                      {t('ServicesSection.seo.lead')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -455,31 +564,38 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
               <div className="text-center mb-10">
                 <Palette className={['w-16 h-16 mx-auto mb-4', accentPresets.blue.text].join(' ')} />
                 <h2 className={['text-4xl font-bold mb-4 tracking-wider', accentPresets.blue.text, 'font-jersey'].join(' ')}>{t('ServicesSection.branding.title')}</h2>
+                <p className="text-gray-300 max-w-3xl mx-auto">{t('ServicesSection.branding.lead')}</p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                <ServiceCard
-                  icon={Palette}
-                  title={t('ServicesSection.branding.title')}
-                  description={t('ServicesSection.branding.lead')}
-                  features={[
-                    t('ServicesSection.branding.bullets.i1'),
-                    t('ServicesSection.branding.bullets.i2'),
-                    t('ServicesSection.branding.bullets.i3'),
-                    t('ServicesSection.branding.bullets.i4'),
-                  ]}
-                  accent="blue"
-                  learnMoreLabel={t('ServicesSection.branding.cta')}
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="flex flex-col">
+                  <ServiceCard
+                    icon={Palette}
+                    title={t('ServicesSection.branding.title')}
+                    description={t('ServicesSection.branding.lead')}
+                    features={[
+                      t('ServicesSection.branding.bullets.i1'),
+                      t('ServicesSection.branding.bullets.i2'),
+                      t('ServicesSection.branding.bullets.i3'),
+                      t('ServicesSection.branding.bullets.i4'),
+                    ]}
+                    accent="blue"
+                    learnMoreLabel={t('ServicesSection.branding.cta')}
+                    onLearnMoreClick={() => {
+                      if (embedded && onOpenApp) {
+                        onOpenApp('contact');
+                      }
+                    }}
+                  />
+                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {['Logo', 'Colors', 'Type', 'UI Kit'].map((lbl, i) => (
-                    <div key={i} className={['bg-gray-900 border-2 p-4 hover:shadow-lg transition-all duration-300', accentPresets.blue.border, accentPresets.blue.hoverShadow].join(' ')}>
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-white font-bold">{lbl}</h4>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex flex-col">
+                  <div className={['w-full h-full p-8 border-2', accentPresets.blue.border, 'bg-gray-900/50', 'flex flex-col items-center justify-center'].join(' ')}>
+                    <Palette className={['w-32 h-32 mx-auto', accentPresets.blue.text].join(' ')} />
+                    <p className="text-center text-gray-300 mt-4 font-mono text-sm">
+                      {t('ServicesSection.branding.lead')}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -491,32 +607,39 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
               <div className="text-center mb-10">
                 <Printer className={['w-16 h-16 mx-auto mb-4', accentPresets.purple.text].join(' ')} />
                 <h2 className={['text-4xl font-bold mb-4 tracking-wider', accentPresets.purple.text, 'font-jersey'].join(' ')}>{t('ServicesSection.print.title')}</h2>
+                <p className="text-gray-300 max-w-3xl mx-auto">{t('ServicesSection.print.lead')}</p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                <div className="grid grid-cols-1 gap-4">
-                  {['i1', 'i2', 'i3', 'i4'].map(k => (
-                    <div key={k} className={['bg-gray-900 border-2 p-4 transition-colors duration-300', accentPresets.purple.border, accentPresets.purple.hoverBg].join(' ')}>
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-white font-bold">{t(`ServicesSection.print.bullets.${k}`)}</h4>
-                      </div>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="flex flex-col">
+                  <ServiceCard
+                    icon={Printer}
+                    title={t('ServicesSection.print.title')}
+                    description={t('ServicesSection.print.lead')}
+                    features={[
+                      t('ServicesSection.print.bullets.i1'),
+                      t('ServicesSection.print.bullets.i2'),
+                      t('ServicesSection.print.bullets.i3'),
+                      t('ServicesSection.print.bullets.i4'),
+                    ]}
+                    accent="purple"
+                    learnMoreLabel={t('ServicesSection.print.cta')}
+                    onLearnMoreClick={() => {
+                      if (embedded && onOpenApp) {
+                        onOpenApp('contact');
+                      }
+                    }}
+                  />
                 </div>
 
-                <ServiceCard
-                  icon={Printer}
-                  title={t('ServicesSection.print.title')}
-                  description={t('ServicesSection.print.lead')}
-                  features={[
-                    t('ServicesSection.print.bullets.i1'),
-                    t('ServicesSection.print.bullets.i2'),
-                    t('ServicesSection.print.bullets.i3'),
-                    t('ServicesSection.print.bullets.i4'),
-                  ]}
-                  accent="purple"
-                  learnMoreLabel={t('ServicesSection.print.cta')}
-                />
+                <div className="flex flex-col">
+                  <div className={['w-full h-full p-8 border-2', accentPresets.purple.border, 'bg-gray-900/50', 'flex flex-col items-center justify-center'].join(' ')}>
+                    <Printer className={['w-32 h-32 mx-auto', accentPresets.purple.text].join(' ')} />
+                    <p className="text-center text-gray-300 mt-4 font-mono text-sm">
+                      {t('ServicesSection.print.lead')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -525,7 +648,7 @@ const ServicesSection: React.FC<Props> = ({ t, lang = 'en', embedded = false, on
           <footer className="py-16 bg-gray-900 border-t-2 border-green-400">
             <div className="container mx-auto px-4 text-center">
               <h3 className="text-3xl font-bold text-white mb-4 tracking-wider font-jersey">{t('contact.title')}</h3>
-              <p className="text-gray-300 mb-8 max-w-2xl mx-auto">{t('contact.info')}</p>
+              <p className="text-gray-300 mb-8 max-w-2xl mx-auto">{t('contact.description')}</p>
               <button
                 type="button"
                 onClick={() => {
