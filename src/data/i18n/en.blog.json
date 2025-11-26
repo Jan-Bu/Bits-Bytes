@@ -1,17 +1,18 @@
 {
   "items": [
     {
-      "id": "hello-1999",
-      "title": "FIRST-ENTRY.TXT",
-      "date": "1999-08-28",
-      "category": "NEWS",
-      "body": "Hello world!\n\nThis is our retro blog in Windows 95 style.\nPlain, readable, without unnecessary layers.\n\n— Bits&Bytes"
+      "id": "colors-in-design",
+      "title": "COLORS-IN-DESIGN.TXT",
+      "date": "2025-01-15",
+      "category": "WEBDESIGN",
+      "body": "How to choose the right colors for your website\n\nColors aren't just decoration. They're a tool that influences how people perceive your site.\n\nBasic rule: less is more. Pick 2-3 main colors and stick to them. One dominant, one for accents, one neutral.\n\nCommon mistakes:\n- Too many colors at once\n- Poor contrast between text and background\n- Ignoring color psychology\n\nBlue builds trust. Green means growth. Red is energy. Black is elegance.\n\nBut context matters most. Colors must fit your brand, not trends.\n\nDon't forget accessibility. 4.5:1 contrast for text, 3:1 for UI elements. Your grandma should read it as easily as you.\n\n— Bits&Bytes"
     },
     {
-      "id": "second-entry",
-      "title": "SECOND-ENTRY.TXT",
-      "category": "TEST",
-      "body": "SO WHAT YOU SHIT"
+      "id": "typography-basics",
+      "title": "TYPOGRAPHY-BASICS.TXT",
+      "date": "2025-01-10",
+      "category": "WEBDESIGN",
+      "body": "Typography: the foundation of good web design\n\nPeople read text, not graphics. That's why typography is the most important part of design.\n\nBasic rules:\n\n1. Two fonts are enough\nOne for headings, one for text. More is chaos.\n\n2. Right size\nText minimum 16px. Headings significantly larger. Mobile users will thank you.\n\n3. Line height\nText needs to breathe. 1.5-1.8 for body text is standard.\n\n4. Line length\n50-75 characters per line. More tires, less bores.\n\n5. Contrast\nBlack on white works. Gray on gray doesn't.\n\nThe best typography is the one nobody notices. Because people just read, without obstacles.\n\nChoose a font that fits your brand. Modern? Sans-serif. Traditional? Serif. Technical? Monospace.\n\nAnd most importantly: test on real devices.\n\n— Bits&Bytes"
     }
   ]
 }

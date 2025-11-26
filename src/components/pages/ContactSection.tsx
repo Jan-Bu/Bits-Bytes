@@ -78,9 +78,9 @@ const ContactSection: React.FC<Props> = ({ t }) => {
   const [tab, setTab] = useState<Tab>("email");
   const toEmail = useMemo(() => t("contact.info.email.value"), [t]);
 
-  // Online okna: Jan 9–22, Alan 8–18 (lokální čas zařízení)
+  // Online okna: Jan 9–22,  
   const janOnline = useOnlineStatus(9, 22);
-  const alanOnline = useOnlineStatus(8, 18);
+  
 
   function handleSend(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -170,7 +170,7 @@ const ContactSection: React.FC<Props> = ({ t }) => {
                   {/* Sloupec přes celé okno, scroll uvnitř */}
                   <div className="h-full flex flex-col min-h-0 overflow-auto">
                     {/* Grid, který se roztáhne a řádky mají 1fr (stejná/úplná výška) */}
-                    <div className="flex-1 grid gap-4 md:grid-cols-2 [grid-auto-rows:1fr] min-h-0">
+                    <div className="flex-1 grid gap-4 grid-cols-1 [grid-auto-rows:1fr] min-h-0">
                       {/* Bits / Jan */}
                       <Card95 className="p-3 h-full">
                         <div className="flex items-center gap-3 mb-3">
@@ -198,35 +198,6 @@ const ContactSection: React.FC<Props> = ({ t }) => {
                         </div>
 
                         <StatusPill online={janOnline} hoursKey="contact.phone.bits.hours" />
-                      </Card95>
-
-                      {/* Bytes / Alan */}
-                      <Card95 className="p-3 h-full">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-12 h-12 grid place-items-center" style={{ background: WIN95.face, border: `1px solid ${WIN95.dark}`, boxShadow: bevelOut }}>
-                            <User size={18} />
-                          </div>
-                          <div className="leading-tight">
-                            <div className="text-[24px] font-semibold">{t("contact.phone.bytes.title")} - {t("contact.phone.bytes.name")}</div>
-                            <div className="text-[18px] opacity-70">{t("contact.phone.direct")}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <a className="text-base underline" href="tel:+420777535749" title={t("contact.phone.call")}>
-                            +420&nbsp;777&nbsp;535&nbsp;749
-                          </a>
-                          <div className="flex items-center gap-2">
-                            <a href="tel:+420777535749" className="h-7 px-3 text-base inline-flex items-center gap-2" style={{ background: WIN95.face, border: `1px solid ${WIN95.dark}`, boxShadow: bevelOut }}>
-                              <PhoneCall size={16} /><span>{t("contact.phone.call")}</span>
-                            </a>
-                            <button type="button" onClick={() => copy("+420777535749", t)} className="h-7 px-2 inline-flex items-center" style={{ background: WIN95.face, border: `1px solid ${WIN95.dark}`, boxShadow: bevelOut, cursor: "pointer" }} title={t("common.copy")}>
-                              <Copy size={14} />
-                            </button>
-                          </div>
-                        </div>
-
-                        <StatusPill online={alanOnline} hoursKey="contact.phone.bytes.hours" />
                       </Card95>
                     </div>
 

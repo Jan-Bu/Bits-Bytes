@@ -22,7 +22,6 @@ const ServiceCard: React.FC<Props> = ({
 
   return (
     <div className="group relative h-full flex flex-col">
-      <div className={['absolute inset-0 bg-gradient-to-r', a.gradFromSoft, 'to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500'].join(' ')} />
       <div className={['relative bg-gray-900 border-2', a.border, a.bgSoft, 'p-6 transform transition-all duration-300 hover:scale-105 shadow-lg', a.hoverShadow, 'flex flex-col h-full'].join(' ')}>
         <div className="flex items-center gap-4 mb-4">
           <div className={['p-3 border-2', a.border, a.bgSoft, a.text].join(' ')}>

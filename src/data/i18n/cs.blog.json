@@ -1,17 +1,18 @@
 {
   "items": [
     {
-      "id": "prvni-zaznam",
-      "title": "PRVNI-ZAZNAM.TXT",
-      "date": "1999-08-28",
-      "category": "NOVINKY",
-      "body": "Ahoj světe!\n\nTohle je náš retro blog ve stylu Windows 95.\nText je prostý, čitelný a bez zbytečných vrstev.\n\n— Bits&Bytes"
+      "id": "barvy-v-designu",
+      "title": "BARVY-V-DESIGNU.TXT",
+      "date": "2025-01-15",
+      "category": "WEBDESIGN",
+      "body": "Jak vybrat správné barvy pro váš web\n\nBarvy nejsou jen dekorace. Jsou to nástroj, který ovlivňuje, jak lidé vaši stránku vnímají.\n\nZákladní pravidlo: méně je víc. Vyberte si 2-3 hlavní barvy a držte se jich. Jedna dominantní, jedna pro akcenty, jedna neutrální.\n\nNejčastější chyby:\n- Příliš mnoho barev najednou\n- Špatný kontrast mezi textem a pozadím\n- Ignorování psychologie barev\n\nModrá buduje důvěru. Zelená znamená růst. Červená je energie. Černá je elegance.\n\nAle nejdůležitější je kontext. Barvy musí sedět vaší značce, ne trendům.\n\nNezapomeňte na přístupnost. Kontrast 4.5:1 pro text, 3:1 pro UI prvky. Vaše babička to musí přečíst stejně dobře jako vy.\n\n— Bits&Bytes"
     },
     {
-      "id": "druhy-zaznam",
-      "title": "DRUHY-ZAZNAM.TXT",
-      "category": "ZKOUSKA",
-      "body": "TAK CO TY HOVNO"
+      "id": "typografie-zaklady",
+      "title": "TYPOGRAFIE-ZAKLADY.TXT",
+      "date": "2025-01-10",
+      "category": "WEBDESIGN",
+      "body": "Typografie: základ každého dobrého webu\n\nLidé čtou text, ne grafiku. Proto je typografie nejdůležitější část designu.\n\nZákladní pravidla:\n\n1. Dva fonty stačí\nJeden pro nadpisy, druhý pro text. Víc je chaos.\n\n2. Správná velikost\nText minimálně 16px. Nadpisy výrazně větší. Mobilní uživatelé vám poděkují.\n\n3. Řádkování (line-height)\nText potřebuje dýchat. 1.5-1.8 pro běžný text je standard.\n\n4. Délka řádku\n50-75 znaků na řádek. Víc únava, méň nudu.\n\n5. Kontrast\nČerná na bílé funguje. Šedá na šedé ne.\n\nNejlepší typografie je ta, kterou si nikdo nevšimne. Protože lidé prostě čtou, bez překážek.\n\nVyberte si font, který sedí vaší značce. Moderní? Sans-serif. Tradiční? Serif. Technický? Monospace.\n\nA hlavně: testujte na skutečných zařízeních.\n\n— Bits&Bytes"
     }
   ]
 }
