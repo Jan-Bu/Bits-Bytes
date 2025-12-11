@@ -154,9 +154,9 @@ export class MainScene extends Phaser.Scene {
     });
 
     // --- Vlajka (entity "flag" z mapy)
-    // Logika: když je VIDĚT CZ → app je EN (po kliknutí přepneme na CS)
+    // Logika: když je VIDĚT CZ → app je CZ (zobrazuje aktuální jazyk)
     const startLang = this.getLang();
-    const shownKey = startLang === 'en' ? 'flag_cz' : 'flag_en';
+    const shownKey = startLang === 'en' ? 'flag_en' : 'flag_cz';
 
     this.flag = this.add.sprite(ents.flag.x, ents.flag.y, shownKey).setOrigin(0.5, 0.5);
     this.flag.setInteractive({ cursor: 'pointer' });
@@ -197,7 +197,7 @@ export class MainScene extends Phaser.Scene {
         const next: 'cs' | 'en' = cur === 'en' ? 'cs' : 'en';
         this.setLang(next);
 
-        const nextShown = next === 'en' ? 'flag_cz' : 'flag_en';
+        const nextShown = next === 'en' ? 'flag_en' : 'flag_cz';
         this.flag.setTexture(nextShown);
 
         this.updateTexts(); // okamžitý přepis nápisu

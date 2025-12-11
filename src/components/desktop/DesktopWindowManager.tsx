@@ -424,6 +424,7 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
     terms: { left: 420, top: 160 },
     gdpr: { left: 460, top: 200 },
     webview: { left: 500, top: 240 },
+    flappy: { left: 240, top: 140 },
   }), []);
   const wpos = windowPos ?? defaultPos;
 
@@ -434,6 +435,13 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
 
   const timersRef = useRef<{ interval?: number; timeout?: number }>({});
   const startedRef = useRef(false);
+
+  // ====== FLAPPY loading logika ======
+  const [flappyLoading, setFlappyLoading] = useState(false);
+  const [flappyLoadPct, setFlappyLoadPct] = useState(0);
+
+  const flappyTimersRef = useRef<{ interval?: number; timeout?: number }>({});
+  const flappyStartedRef = useRef(false);
 
   useEffect(() => {
     const isAboutOpen = open.includes('about');
@@ -469,6 +477,37 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
       onAboutFullscreenChange?.(false);
     }
   }, [open, aboutFullscreen, onAboutFullscreenChange, aboutLoading]);
+
+  useEffect(() => {
+    const isFlappyOpen = open.includes('flappy');
+
+    if (isFlappyOpen && !flappyStartedRef.current) {
+      flappyStartedRef.current = true;
+      setFlappyLoading(true);
+      setFlappyLoadPct(0);
+
+      const start = Date.now();
+      flappyTimersRef.current.interval = window.setInterval(() => {
+        const elapsed = Date.now() - start;
+        const pct = Math.min(100, Math.round((elapsed / 800) * 100));
+        setFlappyLoadPct(pct);
+      }, 50);
+
+      flappyTimersRef.current.timeout = window.setTimeout(() => {
+        if (flappyTimersRef.current.interval) clearInterval(flappyTimersRef.current.interval);
+        setFlappyLoadPct(100);
+        setFlappyLoading(false);
+      }, 900);
+    }
+
+    if (!isFlappyOpen && (flappyLoading || flappyStartedRef.current)) {
+      if (flappyTimersRef.current.interval) clearInterval(flappyTimersRef.current.interval);
+      if (flappyTimersRef.current.timeout) clearTimeout(flappyTimersRef.current.timeout);
+      flappyStartedRef.current = false;
+      setFlappyLoading(false);
+      setFlappyLoadPct(0);
+    }
+  }, [open, flappyLoading]);
 
   // ESC zavře top window
   useEffect(() => {
@@ -564,6 +603,44 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
     </div>
   );
 
+  // Retro loader pro Flappy Bits
+  const FlappyLoading: React.FC = () => (
+    <div
+      className="w-full h-full"
+      style={{ backgroundColor: '#000', imageRendering: 'pixelated' }}
+    >
+      <div className="w-full h-full flex flex-col items-center justify-center text-yellow-400 font-mono px-4">
+        <div className="text-center mb-6">
+          <div className="text-[13px] tracking-wider">FLAPPY BITS ENGINE v1.0</div>
+          <div className="text-[11px] opacity-70 mt-1">© 2025 Bits&amp;Bytes</div>
+        </div>
+        <div className="mb-3 text-[13px]">
+          <span className="mr-2">LOADING</span>
+          <span className="inline-block w-1 h-4 align-middle animate-pulse">▮</span>
+        </div>
+        <div className="w-[min(520px,90%)] border border-yellow-500 p-1" style={{ boxShadow: '0 0 8px rgba(255,255,0,0.25) inset' }}>
+          <div
+            className="h-4 bg-yellow-500"
+            style={{
+              width: `${flappyLoadPct}%`,
+              transition: 'width 80ms linear',
+              boxShadow: '0 0 6px rgba(255,255,0,0.7)',
+            }}
+          />
+        </div>
+        <div className="mt-2 text-[11px] opacity-80">
+          {flappyLoadPct < 100 ? `Loading game… ${flappyLoadPct}%` : 'Ready!'}
+        </div>
+        <div className="mt-5 text-[10px] leading-relaxed opacity-80 text-center">
+          <div>INIT PHYSICS… OK</div>
+          <div>INIT GRAPHICS… OK</div>
+          <div>INIT CONTROLS… OK</div>
+          <div>START GAME… {flappyLoadPct >= 80 ? 'OK' : '…'}</div>
+        </div>
+      </div>
+    </div>
+  );
+
   /* === Externí okno: blogpost (spravované managerem) === */
   const [blogPostExt, setBlogPostExt] = useState<{
     open: boolean;
@@ -646,6 +723,31 @@ export const DesktopWindowManager: React.FC<DesktopWindowManagerProps> = ({
               {/* obsah pod titlebarem vyplní celé okno */}
               <div className="w-full h-[calc(100%-24px)]">
                 <RetroLoading />
+              </div>
+            </Win95Window>
+          );
+        }
+
+        // FLAPPY loader (už ne fullscreen, ale normální okno)
+        if (id === 'flappy' && flappyLoading) {
+          if (minimized.has('flappy')) return null;
+          return (
+            <Win95Window
+              key="flappy-loading"
+              id="flappy"
+              title={titles['flappy']}
+              left={wpos['flappy']?.left ?? 240}
+              top={wpos['flappy']?.top ?? 140}
+              z={zFor('flappy')}
+              onFocus={onFocus}
+              onClose={handleClose}
+              onMinimize={handleMinimize}
+              onMaximize={onFocus}
+              frame="edge"
+              enforce70={false}
+            >
+              <div className="w-full h-[calc(100%-24px)]">
+                <FlappyLoading />
               </div>
             </Win95Window>
           );

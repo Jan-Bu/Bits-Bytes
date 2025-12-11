@@ -7,4 +7,5 @@ export type AppId =
   | 'contact'
   | 'terms'
   | 'gdpr'
-  | 'webview';
+  | 'webview'
+  | 'flappy';

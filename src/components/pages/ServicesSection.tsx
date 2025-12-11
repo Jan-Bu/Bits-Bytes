@@ -104,8 +104,14 @@ const ServicesSection: React.FC<Props> = ({ t, embedded = false, onOpenApp, onOp
       {
         title: t('ServicesSection.web.showcase.s2.title'),
         note: t('ServicesSection.web.showcase.s2.note'),
-        href: 'https://decorartstudio.netlify.app',
+        href: 'https://decorart.studio/',
         preview: '/previews/decorart.webp',
+      },
+      {
+        title: t('ServicesSection.web.showcase.s5.title'),
+        note: t('ServicesSection.web.showcase.s5.note'),
+        href: 'https://movi-n.cz/',
+        preview: '/previews/movin.webp',
       },
       {
         title: t('ServicesSection.web.showcase.s3.title'),

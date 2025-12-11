@@ -10,6 +10,7 @@ import BlogSection from './BlogSection';
 import ContactSection from './ContactSection';
 import TermsSection from './TermsSection';
 import GDPRSection from './GDPRSection';
+import FlappySection from './FlappySection';
 import ClippyAssistant from '../desktop/ClippyAssistant';
 
 /* ---- lokální rozšíření ID kvůli internímu prohlížeči ---- */
@@ -44,6 +45,7 @@ const iconMeta: Record<IconAppId, { src: string }> = {
   contact: { src: '/icons/contact_icon.png' },
   terms: { src: '/icons/text_icon.png' },
   gdpr: { src: '/icons/text_icon.png' },
+  flappy: { src: '/icons/flappy_icon.png' },
 };
 
 const DesktopIcon: React.FC<{
@@ -324,7 +326,7 @@ const DesktopSection: React.FC = () => {
 
   // Tablet layout
   const layoutTabletColumns = () => {
-    const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr'];
+    const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr', 'flappy'];
     const rect = desktopRef.current?.getBoundingClientRect();
     const height = rect?.height ?? window.innerHeight;
 
@@ -345,7 +347,7 @@ const DesktopSection: React.FC = () => {
   const initialIcons = useMemo((): { id: AppId; x: number; y: number }[] => {
     if (bp === 'mobile' && fourColXs) {
       const baseY = snapCoord(DESKTOP_MARGIN);
-      const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr'];
+      const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr', 'flappy'];
       return ids.map((id, i) => {
         const col = i % 4;
         const row = Math.floor(i / 4);
@@ -364,6 +366,7 @@ const DesktopSection: React.FC = () => {
       { id: 'contact', x: baseX, y: baseY + 4 * GRID },
       { id: 'terms',   x: baseX, y: baseY + 5 * GRID },
       { id: 'gdpr',    x: baseX, y: baseY + 6 * GRID },
+      { id: 'flappy',  x: baseX, y: baseY + 7 * GRID },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bp, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT, ICON_SIZE, fourColXs]);
@@ -416,6 +419,7 @@ const DesktopSection: React.FC = () => {
     terms: t('desktop.icons.terms') || t('nav.terms') || 'Terms',
     gdpr: t('desktop.icons.gdpr') || t('nav.gdpr') || 'GDPR',
     webview: webviewTitle || 'Browser',
+    flappy: 'Flappy Bits',
   };
 
   const bringToFront = (id: DesktopAppId) =>
@@ -478,6 +482,7 @@ const DesktopSection: React.FC = () => {
       case 'contact': return <ContactSection t={t} embedded />;
       case 'terms':   return <TermsSection t={t} />;
       case 'gdpr':    return <GDPRSection t={t} />;
+      case 'flappy':  return <FlappySection t={t} onExit={() => closeApp('flappy')} />;
       case 'webview':
         return (
           <div className="w-full h-full bg-white">
