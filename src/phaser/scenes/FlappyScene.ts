@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-type GameState = 'start' | 'playing' | 'gameover';
+type GameState = 'menu' | 'playing' | 'gameover' | 'leaderboard' | 'settings';
 
 export class FlappyScene extends Phaser.Scene {
   constructor() {
@@ -24,8 +24,18 @@ export class FlappyScene extends Phaser.Scene {
   private birdSprite?: Phaser.GameObjects.Sprite; // Reference pro sprite s animací
   private background!: Phaser.GameObjects.TileSprite; // Pozadí pro scrollování
 
+  // Menu UI
+  private menuContainer?: Phaser.GameObjects.Container;
+  private settingsContainer?: Phaser.GameObjects.Container;
+  private leaderboardContainer?: Phaser.GameObjects.Container;
+  private musicVolume = 0.5; // Default music volume
+
+  // Audio
+  private currentMusic?: Phaser.Sound.BaseSound;
+  private currentMusicLevel = 0;
+
   // Game state
-  private gameState: GameState = 'start';
+  private gameState: GameState = 'menu';
   private score = 0;
   private highScore = 0;
   private pipeTimer?: Phaser.Time.TimerEvent;
@@ -34,10 +44,14 @@ export class FlappyScene extends Phaser.Scene {
   // Game settings
   private readonly GRAVITY = 800;
   private readonly JUMP_VELOCITY = -350;
-  private readonly PIPE_SPEED = 200;
+  private readonly BASE_PIPE_SPEED = 200;
   private readonly PIPE_GAP = 180;
-  private readonly PIPE_SPAWN_INTERVAL = 1800;
+  private readonly BASE_PIPE_SPAWN_INTERVAL = 1800;
   private readonly MAX_PIPE_GAP_CHANGE = 150; // Maximální změna výšky mezi trubkami
+
+  // Aktuální rychlost (bude se měnit s levelem)
+  private currentPipeSpeed = 200;
+  private currentSpawnInterval = 1800;
 
   preload() {
     // Načítání assetů
@@ -53,14 +67,26 @@ export class FlappyScene extends Phaser.Scene {
       frameHeight: 208,
     });
 
-    // Budoucí assety:
-    // this.load.audio('jump', '/assets/jump.mp3');
-    // this.load.audio('hit', '/assets/hit.mp3');
-    // this.load.audio('point', '/assets/point.mp3');
+    // Načtení zvuků
+    this.load.audio('jump', '/sounds/jump.mp3');
+    this.load.audio('hit', '/sounds/hit.mp3');
+    this.load.audio('point', '/sounds/point.mp3');
+
+    // Načtení hudby pro různé levely
+    this.load.audio('music_lvl1', '/sounds/sound_lvl_1.mp3');
+    this.load.audio('music_lvl2', '/sounds/sound_lvl_2.mp3');
+    this.load.audio('music_lvl3', '/sounds/sound_lvl_3.mp3');
+    this.load.audio('music_lvl4', '/sounds/sound_lvl_4.mp3');
   }
 
   create() {
     const { width, height } = this.scale;
+
+    // Load music volume from localStorage
+    const savedVolume = localStorage.getItem('flappyBitsMusicVolume');
+    if (savedVolume) {
+      this.musicVolume = parseFloat(savedVolume);
+    }
 
     // Pozadí - tilující se horizontálně, roztažené vertikálně
     this.background = this.add.tileSprite(width / 2, height / 2, width, height, 'background');
@@ -185,6 +211,9 @@ export class FlappyScene extends Phaser.Scene {
     // Kolize
     this.physics.add.collider(this.bird, this.ground, () => this.gameOver());
     this.physics.add.overlap(this.bird, this.pipes, () => this.gameOver());
+
+    // Show main menu
+    this.showMenu();
   }
 
   update() {
@@ -219,7 +248,12 @@ export class FlappyScene extends Phaser.Scene {
         pipeSprite.scored = true;
         this.score++;
         this.scoreText.setText(this.score.toString());
-        // Zde by se přehrál zvuk: this.sound.play('point');
+
+        // Přehrát zvuk bodu
+        this.sound.play('point', { volume: 1.8 });
+
+        // Aktualizovat hudbu podle skóre
+        this.updateMusicForScore();
       }
     });
 
@@ -239,8 +273,9 @@ export class FlappyScene extends Phaser.Scene {
   }
 
   private handleInput() {
-    if (this.gameState === 'start') {
-      this.startGame();
+    if (this.gameState === 'menu') {
+      // Menu clicks are handled by button events
+      return;
     } else if (this.gameState === 'playing') {
       this.jump();
     } else if (this.gameState === 'gameover') {
@@ -251,14 +286,16 @@ export class FlappyScene extends Phaser.Scene {
   private startGame() {
     this.gameState = 'playing';
     this.startText.setVisible(false);
-    this.jump();
+    this.scoreText.setVisible(true);
 
-    // Spawnování pipes
-    this.pipeTimer = this.time.addEvent({
-      delay: this.PIPE_SPAWN_INTERVAL,
-      callback: () => this.spawnPipe(),
-      loop: true,
-    });
+    // Povolit gravitaci zpět
+    const birdBody = this.bird.body as Phaser.Physics.Arcade.Body;
+    birdBody.setAllowGravity(true);
+
+    // Spustit hudbu level 1 (nastaví rychlost a timer)
+    this.playMusicForLevel(1);
+
+    this.jump();
   }
 
   private jump() {
@@ -274,7 +311,8 @@ export class FlappyScene extends Phaser.Scene {
       this.birdSprite.play('thrust', true);
     }
 
-    // Zde by se přehrál zvuk: this.sound.play('jump');
+    // Přehrát zvuk skoku
+    this.sound.play('jump', { volume: 0.08 });
   }
 
   private spawnPipe() {
@@ -299,7 +337,7 @@ export class FlappyScene extends Phaser.Scene {
     const topPipe = this.pipes.create(width, gapY, 'pipe') as Phaser.Physics.Arcade.Image & { scored?: boolean };
     topPipe.setOrigin(0.5, 1); // origin dole uprostřed
     topPipe.setFlipY(true); // otočit vzhůru nohama
-    topPipe.setVelocityX(-this.PIPE_SPEED);
+    topPipe.setVelocityX(-this.currentPipeSpeed);
     topPipe.scored = false; // inicializace scoring flagu
     if (topPipe.body) {
       (topPipe.body as Phaser.Physics.Arcade.Body).setImmovable(true);
@@ -309,7 +347,7 @@ export class FlappyScene extends Phaser.Scene {
     // Spodní pipe (normálně) - bez scoring flagu, pouze horní pipe počítá body
     const bottomPipe = this.pipes.create(width, gapY + this.PIPE_GAP, 'pipe') as Phaser.Physics.Arcade.Image;
     bottomPipe.setOrigin(0.5, 0); // origin nahoře uprostřed
-    bottomPipe.setVelocityX(-this.PIPE_SPEED);
+    bottomPipe.setVelocityX(-this.currentPipeSpeed);
     if (bottomPipe.body) {
       (bottomPipe.body as Phaser.Physics.Arcade.Body).setImmovable(true);
       (bottomPipe.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
@@ -335,13 +373,17 @@ export class FlappyScene extends Phaser.Scene {
     birdBody.setVelocity(0, 0);
     birdBody.setAllowGravity(false);
 
+    // Zastavit hudbu
+    this.stopMusic();
+
+    // Přehrát zvuk kolize
+    this.sound.play('hit');
+
     // Uložit high score a aktualizovat žebříček
     this.updateHighScore();
 
     // Zobrazit game over screen
     this.showGameOverScreen();
-
-    // Zde by se přehrál zvuk: this.sound.play('hit');
   }
 
   private async updateHighScore() {
@@ -507,6 +549,11 @@ export class FlappyScene extends Phaser.Scene {
     this.currentPlayerName = '';
     this.isTop10 = false;
 
+    // Reset rychlosti na výchozí hodnoty
+    this.currentPipeSpeed = this.BASE_PIPE_SPEED;
+    this.currentSpawnInterval = this.BASE_PIPE_SPAWN_INTERVAL;
+    this.currentMusicLevel = 0;
+
     // Reset ptáčka
     this.bird.setPosition(100, this.scale.height / 2);
     const birdBody = this.bird.body as Phaser.Physics.Arcade.Body;
@@ -520,7 +567,441 @@ export class FlappyScene extends Phaser.Scene {
     this.lastPipeGapY = undefined;
 
     // Reset stavu
-    this.gameState = 'start';
-    this.startText.setVisible(true);
+    this.gameState = 'menu';
+    this.showMenu();
+  }
+
+  // Hudební systém
+  private playMusicForLevel(level: number) {
+    // Pokud už tento level hraje, nic nedělat
+    if (this.currentMusicLevel === level) return;
+
+    // Aktualizovat rychlost hry podle levelu
+    // Každý level = +10% rychlost
+    const speedMultiplier = 1 + ((level - 1) * 0.1); // level 1 = 1.0x, level 2 = 1.1x, level 3 = 1.2x, level 4 = 1.3x
+    this.currentPipeSpeed = this.BASE_PIPE_SPEED * speedMultiplier;
+    this.currentSpawnInterval = this.BASE_PIPE_SPAWN_INTERVAL / speedMultiplier;
+
+    // Aktualizovat spawn timer s novou rychlostí
+    if (this.gameState === 'playing') {
+      if (this.pipeTimer) {
+        this.pipeTimer.destroy();
+      }
+      this.pipeTimer = this.time.addEvent({
+        delay: this.currentSpawnInterval,
+        callback: () => this.spawnPipe(),
+        loop: true,
+      });
+    }
+
+    // Aktualizovat rychlost všech existujících pipes
+    this.pipes.children.entries.forEach((pipe) => {
+      const pipeBody = (pipe as Phaser.GameObjects.Image).body as Phaser.Physics.Arcade.Body;
+      pipeBody.setVelocityX(-this.currentPipeSpeed);
+    });
+
+    // Zastavit aktuální hudbu pokud hraje
+    if (this.currentMusic) {
+      this.currentMusic.stop();
+      this.currentMusic.destroy();
+      this.currentMusic = undefined;
+    }
+
+    // Určit kterou hudbu přehrát
+    let musicKey: string;
+    if (level === 1) {
+      musicKey = 'music_lvl1';
+    } else if (level === 2) {
+      musicKey = 'music_lvl2';
+    } else if (level === 3) {
+      musicKey = 'music_lvl3';
+    } else {
+      musicKey = 'music_lvl4';
+    }
+
+    // Spustit novou hudbu ve smyčce s uloženou hlasitostí
+    this.currentMusic = this.sound.add(musicKey, { loop: true, volume: this.musicVolume });
+    this.currentMusic.play();
+    this.currentMusicLevel = level;
+  }
+
+  private updateMusicForScore() {
+    // Určit level podle skóre
+    // 1-20: level 1, 21-40: level 2, 41-60: level 3, 61+: level 4
+    let targetLevel: number;
+    if (this.score >= 1 && this.score <= 20) {
+      targetLevel = 1;
+    } else if (this.score >= 21 && this.score <= 40) {
+      targetLevel = 2;
+    } else if (this.score >= 41 && this.score <= 60) {
+      targetLevel = 3;
+    } else if (this.score >= 61) {
+      targetLevel = 4;
+    } else {
+      return; // score = 0, hudba už hraje z startGame
+    }
+
+    // Přepnout hudbu pokud se level změnil
+    this.playMusicForLevel(targetLevel);
+  }
+
+  private stopMusic() {
+    if (this.currentMusic) {
+      this.currentMusic.stop();
+      this.currentMusic.destroy();
+      this.currentMusic = undefined;
+      this.currentMusicLevel = 0;
+    }
+  }
+
+  // Menu System
+  private showMenu() {
+    const { width, height } = this.scale;
+
+    // Hide other UI
+    this.startText.setVisible(false);
+    this.gameOverText.setVisible(false);
+    this.newHighScoreText.setVisible(false);
+    this.leaderboardText.setVisible(false);
+    this.scoreText.setVisible(false);
+
+    // Destroy other containers if they exist
+    this.settingsContainer?.destroy();
+    this.settingsContainer = undefined;
+    this.leaderboardContainer?.destroy();
+    this.leaderboardContainer = undefined;
+
+    // Reset bird to starting position and disable physics
+    this.bird.setPosition(100, height / 2);
+    const birdBody = this.bird.body as Phaser.Physics.Arcade.Body;
+    birdBody.setVelocity(0, 0);
+    birdBody.setAllowGravity(false);
+
+    // Set bird to idle sprite
+    if (this.birdSprite) {
+      this.birdSprite.anims.stop();
+      this.birdSprite.setTexture('bird_idle');
+    }
+
+    // Create menu container
+    this.menuContainer = this.add.container(width / 2, height / 2);
+    this.menuContainer.setDepth(100);
+
+    // Title
+    const title = this.add.text(0, -150, 'FLAPPY BITS', {
+      fontSize: '64px',
+      color: '#ffff00',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 6,
+    }).setOrigin(0.5);
+
+    // Create buttons
+    const buttonStyle = {
+      fontSize: '32px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 4,
+    };
+
+    // New Game button
+    const newGameBg = this.add.rectangle(0, -20, 300, 60, 0x00aa00);
+    newGameBg.setStrokeStyle(4, 0xffffff);
+    newGameBg.setInteractive({ useHandCursor: true });
+    const newGameText = this.add.text(0, -20, 'NEW GAME', buttonStyle).setOrigin(0.5);
+
+    newGameBg.on('pointerdown', () => {
+      this.menuContainer?.destroy();
+      this.menuContainer = undefined;
+      this.startGame();
+    });
+
+    newGameBg.on('pointerover', () => {
+      newGameBg.setFillStyle(0x00cc00);
+    });
+
+    newGameBg.on('pointerout', () => {
+      newGameBg.setFillStyle(0x00aa00);
+    });
+
+    // Leaderboard button
+    const leaderboardBg = this.add.rectangle(0, 60, 300, 60, 0x0000aa);
+    leaderboardBg.setStrokeStyle(4, 0xffffff);
+    leaderboardBg.setInteractive({ useHandCursor: true });
+    const leaderboardText = this.add.text(0, 60, 'LEADERBOARD', buttonStyle).setOrigin(0.5);
+
+    leaderboardBg.on('pointerdown', () => {
+      this.menuContainer?.destroy();
+      this.menuContainer = undefined;
+      this.showLeaderboard();
+    });
+
+    leaderboardBg.on('pointerover', () => {
+      leaderboardBg.setFillStyle(0x0000cc);
+    });
+
+    leaderboardBg.on('pointerout', () => {
+      leaderboardBg.setFillStyle(0x0000aa);
+    });
+
+    // Settings button
+    const settingsBg = this.add.rectangle(0, 140, 300, 60, 0xaa6600);
+    settingsBg.setStrokeStyle(4, 0xffffff);
+    settingsBg.setInteractive({ useHandCursor: true });
+    const settingsText = this.add.text(0, 140, 'SETTINGS', buttonStyle).setOrigin(0.5);
+
+    settingsBg.on('pointerdown', () => {
+      this.menuContainer?.destroy();
+      this.menuContainer = undefined;
+      this.showSettings();
+    });
+
+    settingsBg.on('pointerover', () => {
+      settingsBg.setFillStyle(0xcc8800);
+    });
+
+    settingsBg.on('pointerout', () => {
+      settingsBg.setFillStyle(0xaa6600);
+    });
+
+    this.menuContainer.add([
+      title,
+      newGameBg,
+      newGameText,
+      leaderboardBg,
+      leaderboardText,
+      settingsBg,
+      settingsText,
+    ]);
+  }
+
+  private async showLeaderboard() {
+    const { width, height } = this.scale;
+
+    this.gameState = 'leaderboard';
+
+    // Create leaderboard container
+    this.leaderboardContainer = this.add.container(width / 2, height / 2);
+    this.leaderboardContainer.setDepth(100);
+
+    // Title
+    const title = this.add.text(0, -200, 'GLOBAL LEADERBOARD', {
+      fontSize: '48px',
+      color: '#ffff00',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
+
+    // Loading text
+    const loadingText = this.add.text(0, 0, 'Loading...', {
+      fontSize: '24px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+    }).setOrigin(0.5);
+
+    this.leaderboardContainer.add([title, loadingText]);
+
+    // Fetch leaderboard
+    try {
+      const response = await fetch('/.netlify/functions/leaderboard');
+      const globalScores = await response.json();
+      const topScores = globalScores.slice(0, 10);
+
+      // Remove loading text
+      loadingText.destroy();
+
+      // Display leaderboard
+      let leaderboardStr = '';
+      topScores.forEach((item: { score: number; name: string }, index: number) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+        leaderboardStr += `${medal} ${index + 1}. ${item.name || 'Anonymous'} - ${item.score}\n`;
+      });
+
+      const scoresText = this.add.text(0, -50, leaderboardStr, {
+        fontSize: '20px',
+        color: '#ffffff',
+        fontFamily: 'Arial',
+        stroke: '#000000',
+        strokeThickness: 2,
+        align: 'center',
+      }).setOrigin(0.5);
+
+      this.leaderboardContainer.add(scoresText);
+    } catch (error) {
+      loadingText.setText('Failed to load leaderboard');
+    }
+
+    // Back button
+    const backBg = this.add.rectangle(0, 220, 200, 50, 0xaa0000);
+    backBg.setStrokeStyle(3, 0xffffff);
+    backBg.setInteractive({ useHandCursor: true });
+    const backText = this.add.text(0, 220, 'BACK', {
+      fontSize: '28px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+
+    backBg.on('pointerdown', () => {
+      this.leaderboardContainer?.destroy();
+      this.leaderboardContainer = undefined;
+      this.gameState = 'menu';
+      this.showMenu();
+    });
+
+    backBg.on('pointerover', () => {
+      backBg.setFillStyle(0xcc0000);
+    });
+
+    backBg.on('pointerout', () => {
+      backBg.setFillStyle(0xaa0000);
+    });
+
+    this.leaderboardContainer.add([backBg, backText]);
+  }
+
+  private showSettings() {
+    const { width, height } = this.scale;
+
+    this.gameState = 'settings';
+
+    // Create settings container
+    this.settingsContainer = this.add.container(width / 2, height / 2);
+    this.settingsContainer.setDepth(100);
+
+    // Title
+    const title = this.add.text(0, -200, 'SETTINGS', {
+      fontSize: '48px',
+      color: '#ffff00',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
+
+    // Music volume label
+    const volumeLabel = this.add.text(0, -80, 'Music Volume', {
+      fontSize: '28px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+
+    // Volume slider background
+    const sliderBg = this.add.rectangle(0, -20, 400, 20, 0x333333);
+    sliderBg.setStrokeStyle(2, 0xffffff);
+
+    // Volume slider fill - always start from left edge
+    const sliderFill = this.add.rectangle(-200, -20, this.musicVolume * 400, 20, 0x00aa00);
+    sliderFill.setOrigin(0, 0.5);
+
+    // Volume slider handle
+    const sliderHandle = this.add.circle(-200 + (this.musicVolume * 400), -20, 15, 0xffffff);
+    sliderHandle.setStrokeStyle(3, 0x000000);
+    sliderHandle.setInteractive({ useHandCursor: true, draggable: true });
+
+    // Volume percentage text
+    const volumeText = this.add.text(0, 30, `${Math.round(this.musicVolume * 100)}%`, {
+      fontSize: '24px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+    }).setOrigin(0.5);
+
+    // Update volume function
+    const updateVolume = (x: number) => {
+      // Constrain to slider bounds
+      const localX = x - width / 2;
+      const clampedX = Phaser.Math.Clamp(localX, -200, 200);
+
+      sliderHandle.setX(clampedX);
+
+      // Update volume (0 to 1)
+      this.musicVolume = (clampedX + 200) / 400;
+
+      // Update fill - width changes, X stays at -200
+      sliderFill.setDisplaySize(this.musicVolume * 400, 20);
+
+      // Update text
+      volumeText.setText(`${Math.round(this.musicVolume * 100)}%`);
+
+      // Save to localStorage
+      localStorage.setItem('flappyBitsMusicVolume', this.musicVolume.toString());
+
+      // Update current music if playing (recreate with new volume)
+      if (this.currentMusic && this.currentMusicLevel > 0) {
+        const wasPlaying = this.currentMusic.isPlaying;
+        const currentLevel = this.currentMusicLevel;
+        this.currentMusic.stop();
+        this.currentMusic.destroy();
+        this.currentMusic = undefined;
+        this.currentMusicLevel = 0;
+
+        if (wasPlaying) {
+          // Restart music with new volume
+          let musicKey: string;
+          if (currentLevel === 1) musicKey = 'music_lvl1';
+          else if (currentLevel === 2) musicKey = 'music_lvl2';
+          else if (currentLevel === 3) musicKey = 'music_lvl3';
+          else musicKey = 'music_lvl4';
+
+          this.currentMusic = this.sound.add(musicKey, { loop: true, volume: this.musicVolume });
+          this.currentMusic.play();
+          this.currentMusicLevel = currentLevel;
+        }
+      }
+    };
+
+    // Slider drag handler
+    this.input.on('drag', (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject, dragX: number) => {
+      if (gameObject !== sliderHandle) return;
+      updateVolume(dragX);
+    });
+
+    // Click on slider background to jump to position
+    sliderBg.setInteractive();
+    sliderBg.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      updateVolume(pointer.x);
+    });
+
+    // Back button
+    const backBg = this.add.rectangle(0, 150, 200, 50, 0xaa0000);
+    backBg.setStrokeStyle(3, 0xffffff);
+    backBg.setInteractive({ useHandCursor: true });
+    const backText = this.add.text(0, 150, 'BACK', {
+      fontSize: '28px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+
+    backBg.on('pointerdown', () => {
+      this.settingsContainer?.destroy();
+      this.settingsContainer = undefined;
+      this.gameState = 'menu';
+      this.showMenu();
+    });
+
+    backBg.on('pointerover', () => {
+      backBg.setFillStyle(0xcc0000);
+    });
+
+    backBg.on('pointerout', () => {
+      backBg.setFillStyle(0xaa0000);
+    });
+
+    this.settingsContainer.add([
+      title,
+      volumeLabel,
+      sliderBg,
+      sliderFill,
+      sliderHandle,
+      volumeText,
+      backBg,
+      backText,
+    ]);
   }
 }
