@@ -261,8 +261,7 @@ export class FlappyScene extends Phaser.Scene {
     this.physics.add.collider(this.bird, this.ground, () => this.gameOver());
     this.physics.add.overlap(this.bird, this.pipes, () => this.gameOver());
 
-    // Show main menu
-    this.showMenu();
+    // Menu se zobrazí až po fullscreen dialogu
   }
 
   update() {
