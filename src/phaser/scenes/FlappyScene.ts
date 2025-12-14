@@ -497,7 +497,36 @@ export class FlappyScene extends Phaser.Scene {
       fontFamily: 'Arial',
     }).setOrigin(0.5);
 
-    this.nameInputContainer.add([inputBg, this.nameInputText]);
+    // Submit button
+    const submitBg = this.add.rectangle(0, 70, 180, 45, 0x00aa00);
+    submitBg.setStrokeStyle(3, 0xffffff);
+    submitBg.setInteractive({ useHandCursor: true });
+
+    const submitText = this.add.text(0, 70, 'SUBMIT', {
+      fontSize: this.getResponsiveFontSize(24),
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+
+    // Submit button hover effects
+    submitBg.on('pointerover', () => {
+      submitBg.setFillStyle(0x00cc00);
+    });
+
+    submitBg.on('pointerout', () => {
+      submitBg.setFillStyle(0x00aa00);
+    });
+
+    // Submit button click
+    submitBg.on('pointerdown', () => {
+      if (this.currentPlayerName.length > 0) {
+        this.submitScore();
+      }
+    });
+
+    this.nameInputContainer.add([inputBg, this.nameInputText, submitBg, submitText]);
 
     // Přidat keyboard listener pro psaní jména
     this.input.keyboard?.on('keydown', this.handleNameInput, this);
@@ -535,19 +564,33 @@ export class FlappyScene extends Phaser.Scene {
         }),
       });
 
-      if (response.ok) {
-        // Skóre úspěšně odesláno
-        // Odstranit input field
-        this.nameInputContainer?.destroy();
-        this.nameInputContainer = undefined;
-        this.input.keyboard?.off('keydown', this.handleNameInput, this);
-
-        // Zobrazit potvrzení a aktualizovaný žebříček
-        this.leaderboardText.setText('Score submitted!\n\nClick to Restart');
-        this.leaderboardText.setY(this.scale.height / 2);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Submit failed:', response.status, errorData);
+        throw new Error(`Server returned ${response.status}: ${errorData.error || 'Unknown error'}`);
       }
+
+      const result = await response.json();
+      console.log('Score submitted successfully:', result);
+
+      // Skóre úspěšně odesláno
+      // Odstranit input field
+      this.nameInputContainer?.destroy();
+      this.nameInputContainer = undefined;
+      this.input.keyboard?.off('keydown', this.handleNameInput, this);
+
+      // Zobrazit potvrzení a aktualizovaný žebříček
+      this.leaderboardText.setText('Score submitted!\n\nClick to Restart');
+      this.leaderboardText.setY(this.scale.height / 2);
     } catch (error) {
       console.error('Failed to submit score:', error);
+      // Zobrazit chybu uživateli
+      if (this.nameInputText) {
+        this.nameInputText.setColor('#ff0000');
+        setTimeout(() => {
+          this.nameInputText?.setColor('#ffffff');
+        }, 1000);
+      }
     }
   }
 
