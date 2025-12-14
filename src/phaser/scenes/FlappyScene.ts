@@ -404,7 +404,18 @@ export class FlappyScene extends Phaser.Scene {
     // Načíst globální žebříček ze serveru
     try {
       const response = await fetch('/.netlify/functions/leaderboard');
+
+      if (!response.ok) {
+        console.error('Leaderboard fetch failed:', response.status, response.statusText);
+        throw new Error(`Server returned ${response.status}`);
+      }
+
       const globalScores = await response.json();
+
+      if (!Array.isArray(globalScores)) {
+        console.error('Invalid leaderboard data:', globalScores);
+        throw new Error('Leaderboard data is not an array');
+      }
 
       // Zjistit jestli je hráč v top 10
       const topScores = globalScores.slice(0, 10);
@@ -806,7 +817,19 @@ export class FlappyScene extends Phaser.Scene {
     // Fetch leaderboard
     try {
       const response = await fetch('/.netlify/functions/leaderboard');
+
+      if (!response.ok) {
+        console.error('Leaderboard fetch failed:', response.status, response.statusText);
+        throw new Error(`Server returned ${response.status}`);
+      }
+
       const globalScores = await response.json();
+
+      if (!Array.isArray(globalScores)) {
+        console.error('Invalid leaderboard data:', globalScores);
+        throw new Error('Leaderboard data is not an array');
+      }
+
       const topScores = globalScores.slice(0, 10);
 
       // Remove loading text
@@ -830,6 +853,7 @@ export class FlappyScene extends Phaser.Scene {
 
       this.leaderboardContainer.add(scoresText);
     } catch (error) {
+      console.error('Error loading leaderboard:', error);
       loadingText.setText('Failed to load leaderboard');
     }
 

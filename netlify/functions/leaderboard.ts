@@ -58,7 +58,19 @@ export const handler: Handler = async (event) => {
     };
   }
 
-  const store = getStore('flappy-bits');
+  let store;
+  try {
+    store = getStore('flappy-bits');
+  } catch (error) {
+    console.error('Blobs initialization error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: 'Leaderboard temporarily unavailable. Blobs storage not configured.',
+      }),
+    };
+  }
 
   // GET - získat top skóre
   if (event.httpMethod === 'GET') {
@@ -77,11 +89,12 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify(topScores),
       };
     } catch (error) {
-      console.error('Error fetching scores:', error);
+      console.error('Blobs GET error:', error);
+      // Return empty array instead of crashing
       return {
-        statusCode: 500,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ error: 'Failed to fetch scores' }),
+        body: JSON.stringify([]),
       };
     }
   }
@@ -120,7 +133,18 @@ export const handler: Handler = async (event) => {
       }
 
       // Načíst aktuální skóre
-      const scoresData = await store.get(BLOB_KEY, { type: 'json' }) as Score[] | null;
+      let scoresData;
+      try {
+        scoresData = await store.get(BLOB_KEY, { type: 'json' }) as Score[] | null;
+      } catch (error) {
+        console.error('Blobs GET error during POST:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Failed to access leaderboard storage' }),
+        };
+      }
+
       const scores = scoresData || [];
 
       const newScore: Score = {
@@ -138,7 +162,16 @@ export const handler: Handler = async (event) => {
         .slice(0, MAX_SCORES_STORED);
 
       // Uložit zpět do Blobs
-      await store.setJSON(BLOB_KEY, sortedScores);
+      try {
+        await store.setJSON(BLOB_KEY, sortedScores);
+      } catch (error) {
+        console.error('Blobs setJSON error:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Failed to save score to storage' }),
+        };
+      }
 
       // Zjistit, jestli se hráč dostal do top 10
       const top10 = sortedScores.slice(0, 10);
