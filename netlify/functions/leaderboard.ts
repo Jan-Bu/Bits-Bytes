@@ -12,6 +12,18 @@ const BLOB_KEY = 'flappy-bits-scores';
 const MAX_SCORE = 99999; // Maximální možné skóre (anti-cheat)
 const MAX_SCORES_STORED = 1000;
 
+function createStore() {
+  const siteID = process.env.NETLIFY_SITE_ID;
+  const token = process.env.NETLIFY_AUTH_TOKEN;
+
+  if (siteID && token) {
+    return getStore({ name: 'flappy-bits', siteID, token });
+  }
+
+  // Fallback – pokud běží v nativním Netlify Blobs prostředí
+  return getStore('flappy-bits');
+}
+
 // Simple rate limiting (IP-based)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60000; // 1 minuta
@@ -60,7 +72,7 @@ export const handler: Handler = async (event) => {
 
   let store;
   try {
-    store = getStore('flappy-bits');
+    store = createStore();
   } catch (error) {
     console.error('Blobs initialization error:', error);
     return {
