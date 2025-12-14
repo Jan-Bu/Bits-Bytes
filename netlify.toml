@@ -4,8 +4,9 @@
 
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild"
 
-# SPA routing (pokud používáš react-router)
+# SPA routing (react-router)
 [[redirects]]
   from = "/*"
   to = "/index.html"
