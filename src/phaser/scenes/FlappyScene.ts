@@ -336,6 +336,10 @@ export class FlappyScene extends Phaser.Scene {
     this.startText.setVisible(false);
     this.scoreText.setVisible(true);
 
+    // Destroy menu container if exists
+    this.menuContainer?.destroy();
+    this.menuContainer = undefined;
+
     // Povolit gravitaci zpět
     const birdBody = this.bird.body as Phaser.Physics.Arcade.Body;
     birdBody.setAllowGravity(true);
