@@ -172,6 +172,7 @@ export class FlappyScene extends Phaser.Scene {
     const birdBody = this.bird.body as Phaser.Physics.Arcade.Body;
     birdBody.setGravityY(this.GRAVITY);
     birdBody.setCollideWorldBounds(true);
+    birdBody.setAllowGravity(false); // Vypnout gravitaci na začátku (zapne se až při startu hry)
 
     // Nastavit přesnou collision box jen na viditelnou část panáčka
     // Kresleno ve 100×52px: panáček nahoře, pod tělem 18px prázdných → tělo 34px vysoké
@@ -774,6 +775,8 @@ export class FlappyScene extends Phaser.Scene {
     this.scoreText.setVisible(false);
 
     // Destroy other containers if they exist
+    this.menuContainer?.destroy();
+    this.menuContainer = undefined;
     this.settingsContainer?.destroy();
     this.settingsContainer = undefined;
     this.leaderboardContainer?.destroy();
@@ -820,8 +823,6 @@ export class FlappyScene extends Phaser.Scene {
     const newGameText = this.add.text(0, -20, 'NEW GAME', buttonStyle).setOrigin(0.5);
 
     newGameBg.on('pointerdown', () => {
-      this.menuContainer?.destroy();
-      this.menuContainer = undefined;
       this.startGame();
     });
 
