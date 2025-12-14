@@ -419,7 +419,9 @@ export class FlappyScene extends Phaser.Scene {
 
       // Zjistit jestli je hráč v top 10
       const topScores = globalScores.slice(0, 10);
-      this.isTop10 = topScores.some((s: { score: number }) => s.score <= this.score);
+      // Pokud je leaderboard prázdný nebo má méně než 10 položek, hráč je automaticky v top 10
+      // Nebo pokud má vyšší skóre než nejhorší v top 10
+      this.isTop10 = topScores.length < 10 || topScores.some((s: { score: number }) => s.score <= this.score);
 
       if (this.isTop10) {
         // Hráč je v top 10 - zobrazit NEW HIGH SCORE a input field
