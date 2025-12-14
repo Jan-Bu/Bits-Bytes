@@ -53,6 +53,15 @@ export class FlappyScene extends Phaser.Scene {
   private currentPipeSpeed = 200;
   private currentSpawnInterval = 1800;
 
+  // Helper funkce pro responzivní velikosti
+  private getResponsiveFontSize(baseSize: number): string {
+    const { width, height } = this.scale;
+    const minDimension = Math.min(width, height);
+    const scaleFactor = minDimension / 600; // 600px jako baseline
+    const adjustedSize = Math.max(12, baseSize * scaleFactor);
+    return `${Math.round(adjustedSize)}px`;
+  }
+
   preload() {
     // Načítání assetů
     this.load.image('pipe', '/pipe.png');
@@ -149,7 +158,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Score text
     this.scoreText = this.add.text(width / 2, 50, '0', {
-      fontSize: '48px',
+      fontSize: this.getResponsiveFontSize(48),
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -158,7 +167,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // High score text (vpravo nahoře)
     this.highScoreText = this.add.text(width - 20, 20, `Best: ${this.highScore}`, {
-      fontSize: '24px',
+      fontSize: this.getResponsiveFontSize(24),
       color: '#ffff00',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -167,7 +176,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Start text
     this.startText = this.add.text(width / 2, height / 2 - 50, 'Click or Space to Start', {
-      fontSize: '32px',
+      fontSize: this.getResponsiveFontSize(32),
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -176,7 +185,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Game over text
     this.gameOverText = this.add.text(width / 2, height / 2 - 150, 'GAME OVER', {
-      fontSize: '48px',
+      fontSize: this.getResponsiveFontSize(48),
       color: '#ff0000',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -186,7 +195,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // New high score text (zobrazí se jen když hráč je v top 10)
     this.newHighScoreText = this.add.text(width / 2, height / 2 - 90, 'NEW HIGH SCORE!', {
-      fontSize: '32px',
+      fontSize: this.getResponsiveFontSize(32),
       color: '#ffff00',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -196,7 +205,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Leaderboard text (zobrazí se při game over)
     this.leaderboardText = this.add.text(width / 2, height / 2 + 20, '', {
-      fontSize: '18px',
+      fontSize: this.getResponsiveFontSize(18),
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -483,7 +492,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Text pro zobrazení napsaného jména
     this.nameInputText = this.add.text(0, 0, '_', {
-      fontSize: '28px',
+      fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
       fontFamily: 'Arial',
     }).setOrigin(0.5);
@@ -702,7 +711,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Title
     const title = this.add.text(0, -150, 'FLAPPY BITS', {
-      fontSize: '64px',
+      fontSize: this.getResponsiveFontSize(64),
       color: '#ffff00',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -711,7 +720,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Create buttons
     const buttonStyle = {
-      fontSize: '32px',
+      fontSize: this.getResponsiveFontSize(32),
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -800,7 +809,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Title
     const title = this.add.text(0, -200, 'GLOBAL LEADERBOARD', {
-      fontSize: '48px',
+      fontSize: this.getResponsiveFontSize(48),
       color: '#ffff00',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -809,7 +818,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Loading text
     const loadingText = this.add.text(0, 0, 'Loading...', {
-      fontSize: '24px',
+      fontSize: this.getResponsiveFontSize(24),
       color: '#ffffff',
       fontFamily: 'Arial',
     }).setOrigin(0.5);
@@ -845,7 +854,7 @@ export class FlappyScene extends Phaser.Scene {
       });
 
       const scoresText = this.add.text(0, -50, leaderboardStr, {
-        fontSize: '20px',
+        fontSize: this.getResponsiveFontSize(20),
         color: '#ffffff',
         fontFamily: 'Arial',
         stroke: '#000000',
@@ -864,7 +873,7 @@ export class FlappyScene extends Phaser.Scene {
     backBg.setStrokeStyle(3, 0xffffff);
     backBg.setInteractive({ useHandCursor: true });
     const backText = this.add.text(0, 220, 'BACK', {
-      fontSize: '28px',
+      fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -900,7 +909,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Title
     const title = this.add.text(0, -200, 'SETTINGS', {
-      fontSize: '48px',
+      fontSize: this.getResponsiveFontSize(48),
       color: '#ffff00',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -909,7 +918,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Music volume label
     const volumeLabel = this.add.text(0, -80, 'Music Volume', {
-      fontSize: '28px',
+      fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -931,7 +940,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Volume percentage text
     const volumeText = this.add.text(0, 30, `${Math.round(this.musicVolume * 100)}%`, {
-      fontSize: '24px',
+      fontSize: this.getResponsiveFontSize(24),
       color: '#ffffff',
       fontFamily: 'Arial',
     }).setOrigin(0.5);
@@ -997,7 +1006,7 @@ export class FlappyScene extends Phaser.Scene {
     backBg.setStrokeStyle(3, 0xffffff);
     backBg.setInteractive({ useHandCursor: true });
     const backText = this.add.text(0, 150, 'BACK', {
-      fontSize: '28px',
+      fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
