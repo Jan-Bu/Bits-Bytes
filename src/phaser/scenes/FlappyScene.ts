@@ -62,6 +62,43 @@ export class FlappyScene extends Phaser.Scene {
     return `${Math.round(adjustedSize)}px`;
   }
 
+  // Helper pro font family
+  private getFontFamily(): string {
+    return "'Jersey 25', Arial, sans-serif";
+  }
+
+  init() {
+    // Loading screen
+    const { width, height } = this.scale;
+
+    const loadingBg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000);
+
+    const loadingText = this.add.text(width / 2, height / 2 - 50, 'LOADING FLAPPY BITS', {
+      fontSize: this.getResponsiveFontSize(48),
+      color: '#00ff00',
+      fontFamily: this.getFontFamily(),
+    }).setOrigin(0.5);
+
+    const progressBar = this.add.rectangle(width / 2, height / 2 + 50, 0, 30, 0x00ff00);
+    progressBar.setOrigin(0, 0.5);
+
+    const progressBox = this.add.rectangle(width / 2, height / 2 + 50, 400, 30);
+    progressBox.setStrokeStyle(3, 0x00ff00);
+    progressBox.setFillStyle(0x000000, 0);
+
+    this.load.on('progress', (value: number) => {
+      progressBar.width = 400 * value;
+      progressBar.x = (width / 2) - 200;
+    });
+
+    this.load.on('complete', () => {
+      loadingText.destroy();
+      progressBar.destroy();
+      progressBox.destroy();
+      loadingBg.destroy();
+    });
+  }
+
   preload() {
     // Načítání assetů
     this.load.image('pipe', '/pipe.png');
@@ -100,6 +137,9 @@ export class FlappyScene extends Phaser.Scene {
     // Pozadí - tilující se horizontálně, roztažené vertikálně
     this.background = this.add.tileSprite(width / 2, height / 2, width, height, 'background');
     this.background.setTileScale(1, height / 512); // Roztáhnout na celou výšku (512px je velikost textury)
+
+    // Show fullscreen dialog first
+    this.showFullscreenDialog();
 
     // Ptáček - použít sprite pokud je načtený, jinak placeholder
     if (this.textures.exists('bird_idle') && this.textures.exists('bird_thrust')) {
@@ -160,7 +200,7 @@ export class FlappyScene extends Phaser.Scene {
     this.scoreText = this.add.text(width / 2, 50, '0', {
       fontSize: this.getResponsiveFontSize(48),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 4,
     }).setOrigin(0.5).setDepth(100); // Nastavit vysoký depth aby byl nad pipes
@@ -169,7 +209,7 @@ export class FlappyScene extends Phaser.Scene {
     this.highScoreText = this.add.text(width - 20, 20, `Best: ${this.highScore}`, {
       fontSize: this.getResponsiveFontSize(24),
       color: '#ffff00',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 3,
     }).setOrigin(1, 0).setDepth(100);
@@ -178,7 +218,7 @@ export class FlappyScene extends Phaser.Scene {
     this.startText = this.add.text(width / 2, height / 2 - 50, 'Click or Space to Start', {
       fontSize: this.getResponsiveFontSize(32),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 3,
     }).setOrigin(0.5).setDepth(100);
@@ -187,7 +227,7 @@ export class FlappyScene extends Phaser.Scene {
     this.gameOverText = this.add.text(width / 2, height / 2 - 150, 'GAME OVER', {
       fontSize: this.getResponsiveFontSize(48),
       color: '#ff0000',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 4,
       align: 'center',
@@ -197,7 +237,7 @@ export class FlappyScene extends Phaser.Scene {
     this.newHighScoreText = this.add.text(width / 2, height / 2 - 90, 'NEW HIGH SCORE!', {
       fontSize: this.getResponsiveFontSize(32),
       color: '#ffff00',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 3,
       align: 'center',
@@ -207,7 +247,7 @@ export class FlappyScene extends Phaser.Scene {
     this.leaderboardText = this.add.text(width / 2, height / 2 + 20, '', {
       fontSize: this.getResponsiveFontSize(18),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 2,
       align: 'center',
@@ -494,7 +534,7 @@ export class FlappyScene extends Phaser.Scene {
     this.nameInputText = this.add.text(0, 0, '_', {
       fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
     }).setOrigin(0.5);
 
     // Submit button
@@ -505,7 +545,7 @@ export class FlappyScene extends Phaser.Scene {
     const submitText = this.add.text(0, 70, 'SUBMIT', {
       fontSize: this.getResponsiveFontSize(24),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 3,
     }).setOrigin(0.5);
@@ -756,7 +796,7 @@ export class FlappyScene extends Phaser.Scene {
     const title = this.add.text(0, -150, 'FLAPPY BITS', {
       fontSize: this.getResponsiveFontSize(64),
       color: '#ffff00',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 6,
     }).setOrigin(0.5);
@@ -765,7 +805,7 @@ export class FlappyScene extends Phaser.Scene {
     const buttonStyle = {
       fontSize: this.getResponsiveFontSize(32),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 4,
     };
@@ -854,7 +894,7 @@ export class FlappyScene extends Phaser.Scene {
     const title = this.add.text(0, -200, 'GLOBAL LEADERBOARD', {
       fontSize: this.getResponsiveFontSize(48),
       color: '#ffff00',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 4,
     }).setOrigin(0.5);
@@ -863,7 +903,7 @@ export class FlappyScene extends Phaser.Scene {
     const loadingText = this.add.text(0, 0, 'Loading...', {
       fontSize: this.getResponsiveFontSize(24),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
     }).setOrigin(0.5);
 
     this.leaderboardContainer.add([title, loadingText]);
@@ -899,7 +939,7 @@ export class FlappyScene extends Phaser.Scene {
       const scoresText = this.add.text(0, -50, leaderboardStr, {
         fontSize: this.getResponsiveFontSize(20),
         color: '#ffffff',
-        fontFamily: 'Arial',
+        fontFamily: this.getFontFamily(),
         stroke: '#000000',
         strokeThickness: 2,
         align: 'center',
@@ -918,7 +958,7 @@ export class FlappyScene extends Phaser.Scene {
     const backText = this.add.text(0, 220, 'BACK', {
       fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 3,
     }).setOrigin(0.5);
@@ -954,7 +994,7 @@ export class FlappyScene extends Phaser.Scene {
     const title = this.add.text(0, -200, 'SETTINGS', {
       fontSize: this.getResponsiveFontSize(48),
       color: '#ffff00',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 4,
     }).setOrigin(0.5);
@@ -963,7 +1003,7 @@ export class FlappyScene extends Phaser.Scene {
     const volumeLabel = this.add.text(0, -80, 'Music Volume', {
       fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 3,
     }).setOrigin(0.5);
@@ -985,7 +1025,7 @@ export class FlappyScene extends Phaser.Scene {
     const volumeText = this.add.text(0, 30, `${Math.round(this.musicVolume * 100)}%`, {
       fontSize: this.getResponsiveFontSize(24),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
     }).setOrigin(0.5);
 
     // Update volume function
@@ -1051,7 +1091,7 @@ export class FlappyScene extends Phaser.Scene {
     const backText = this.add.text(0, 150, 'BACK', {
       fontSize: this.getResponsiveFontSize(28),
       color: '#ffffff',
-      fontFamily: 'Arial',
+      fontFamily: this.getFontFamily(),
       stroke: '#000000',
       strokeThickness: 3,
     }).setOrigin(0.5);
@@ -1081,5 +1121,86 @@ export class FlappyScene extends Phaser.Scene {
       backBg,
       backText,
     ]);
+  }
+
+  private showFullscreenDialog() {
+    const { width, height } = this.scale;
+
+    // Create overlay
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
+    overlay.setDepth(1000);
+
+    // Create dialog container
+    const dialogContainer = this.add.container(width / 2, height / 2);
+    dialogContainer.setDepth(1001);
+
+    // Dialog background
+    const dialogBg = this.add.rectangle(0, 0, 500, 300, 0x111111);
+    dialogBg.setStrokeStyle(4, 0x00ff00);
+
+    // Title
+    const title = this.add.text(0, -100, 'PLAY IN FULLSCREEN?', {
+      fontSize: this.getResponsiveFontSize(32),
+      color: '#00ff00',
+      fontFamily: this.getFontFamily(),
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
+
+    // YES button
+    const yesBg = this.add.rectangle(-80, 50, 140, 60, 0x00aa00);
+    yesBg.setStrokeStyle(3, 0xffffff);
+    yesBg.setInteractive({ useHandCursor: true });
+
+    const yesText = this.add.text(-80, 50, 'YES', {
+      fontSize: this.getResponsiveFontSize(28),
+      color: '#ffffff',
+      fontFamily: this.getFontFamily(),
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+
+    // NO button
+    const noBg = this.add.rectangle(80, 50, 140, 60, 0xaa0000);
+    noBg.setStrokeStyle(3, 0xffffff);
+    noBg.setInteractive({ useHandCursor: true });
+
+    const noText = this.add.text(80, 50, 'NO', {
+      fontSize: this.getResponsiveFontSize(28),
+      color: '#ffffff',
+      fontFamily: this.getFontFamily(),
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+
+    // YES button handlers
+    yesBg.on('pointerover', () => yesBg.setFillStyle(0x00cc00));
+    yesBg.on('pointerout', () => yesBg.setFillStyle(0x00aa00));
+    yesBg.on('pointerdown', () => {
+      // Enter fullscreen
+      if (this.scale.isFullscreen) {
+        this.scale.stopFullscreen();
+      } else {
+        this.scale.startFullscreen();
+      }
+      // Close dialog
+      overlay.destroy();
+      dialogContainer.destroy();
+      // Show menu
+      this.showMenu();
+    });
+
+    // NO button handlers
+    noBg.on('pointerover', () => noBg.setFillStyle(0xcc0000));
+    noBg.on('pointerout', () => noBg.setFillStyle(0xaa0000));
+    noBg.on('pointerdown', () => {
+      // Close dialog
+      overlay.destroy();
+      dialogContainer.destroy();
+      // Show menu
+      this.showMenu();
+    });
+
+    dialogContainer.add([dialogBg, title, yesBg, yesText, noBg, noText]);
   }
 }

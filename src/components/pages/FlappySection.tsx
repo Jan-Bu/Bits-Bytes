@@ -33,7 +33,9 @@ const FlappySection: React.FC<FlappySectionProps> = ({ onExit }) => {
       },
       scene: [FlappyScene],
       scale: {
-        mode: Phaser.Scale.NONE, // Žádné auto-škálování
+        mode: Phaser.Scale.FIT, // Škálovat aby se vešlo
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        fullscreenTarget: containerRef.current,
       },
     };
 
