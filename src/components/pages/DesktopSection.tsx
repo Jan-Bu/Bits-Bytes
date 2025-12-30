@@ -77,7 +77,7 @@ const DesktopIcon: React.FC<{
     if (!desk) return { nx, ny };
     const rect = desk.getBoundingClientRect();
     const maxX = rect.width - DESKTOP_MARGIN - ICON_SIZE;
-    const maxY = rect.height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 30);
+    const maxY = rect.height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 40); // +40px pro label
     return {
       nx: Math.min(Math.max(nx, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxX)),
       ny: Math.min(Math.max(ny, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxY)),
@@ -124,7 +124,7 @@ const DesktopIcon: React.FC<{
   const intersects = (a: {x:number;y:number;w:number;h:number}, b:{x:number;y:number;w:number;h:number}) =>
     !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
 
-  const iconRectAt = (xx:number, yy:number) => ({ x: xx, y: yy, w: ICON_SIZE, h: ICON_SIZE + 30 });
+  const iconRectAt = (xx:number, yy:number) => ({ x: xx, y: yy, w: ICON_SIZE, h: ICON_SIZE + 40 }); // +40px pro label místo +30px
 
   const finishDrag = (e: React.PointerEvent) => {
     const target = e.currentTarget as HTMLDivElement;
@@ -147,7 +147,7 @@ const DesktopIcon: React.FC<{
     // hranice plochy pro BFS
     const deskRect = desktopRef.current?.getBoundingClientRect();
     const maxX = (deskRect?.width ?? window.innerWidth) - DESKTOP_MARGIN - ICON_SIZE;
-    const maxY = (deskRect?.height ?? window.innerHeight) - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 30);
+    const maxY = (deskRect?.height ?? window.innerHeight) - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 40); // +40px pro label
     const minX = DESKTOP_MARGIN;
     const minY = DESKTOP_MARGIN;
     const withinBounds = (xx:number, yy:number) =>
@@ -291,10 +291,11 @@ const DesktopSection: React.FC = () => {
   }, []);
 
   // Rozměry + taskbar rezerva
+  // Taskbar má h-8 = 32px ve všech breakpointech, ale přidáváme extra padding pro bezpečnost
   const { ICON_SIZE, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT } = useMemo(() => {
-    if (bp === 'mobile') return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 16, TASKBAR_HEIGHT: 64 };
-    if (bp === 'tablet') return { ICON_SIZE: 96, GRID: 140, DESKTOP_MARGIN: 20, TASKBAR_HEIGHT: 48 };
-    return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 24, TASKBAR_HEIGHT: 40 };
+    if (bp === 'mobile') return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 16, TASKBAR_HEIGHT: 48 }; // 32px taskbar + 16px padding
+    if (bp === 'tablet') return { ICON_SIZE: 96, GRID: 140, DESKTOP_MARGIN: 20, TASKBAR_HEIGHT: 44 }; // 32px taskbar + 12px padding
+    return { ICON_SIZE: 80, GRID: 120, DESKTOP_MARGIN: 24, TASKBAR_HEIGHT: 40 }; // 32px taskbar + 8px padding
   }, [bp]);
 
   // Snap na grid
@@ -304,7 +305,8 @@ const DesktopSection: React.FC = () => {
   // Mobil: 4 sloupce
   const fourColXs = useMemo(() => {
     if (bp !== 'mobile') return null;
-    const cw = window.innerWidth;
+    const rect = desktopRef.current?.getBoundingClientRect();
+    const cw = rect?.width ?? window.innerWidth;
     const maxX = cw - DESKTOP_MARGIN - ICON_SIZE;
     const step = Math.max(1, Math.floor((maxX - DESKTOP_MARGIN) / 3));
     return [DESKTOP_MARGIN, DESKTOP_MARGIN + step, DESKTOP_MARGIN + 2 * step, DESKTOP_MARGIN + 3 * step];
@@ -329,15 +331,21 @@ const DesktopSection: React.FC = () => {
     const ids: AppId[] = ['about', 'services', 'pricing', 'blog', 'contact', 'terms', 'gdpr', 'flappy'];
     const rect = desktopRef.current?.getBoundingClientRect();
     const height = rect?.height ?? window.innerHeight;
+    const width = rect?.width ?? window.innerWidth;
 
     const baseX = snapCoord(DESKTOP_MARGIN);
     const baseY = snapCoord(DESKTOP_MARGIN);
 
-    const usableH = height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - baseY - (ICON_SIZE + 30);
+    const usableH = height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - baseY - (ICON_SIZE + 40); // +40px pro label
     const rowsPerCol = Math.max(1, Math.floor(usableH / GRID) + 1);
 
+    // Omezit počet sloupců, aby se nevytvořily ikony moc vpravo (kvůli Clippymu)
+    // Clippy zabírá cca 160-200px vpravo, takže necháme bezpečnou rezervu
+    const clippyReserve = 220; // Clippy + padding + bezpečná mezera
+    const maxCols = Math.max(1, Math.floor((width - DESKTOP_MARGIN - clippyReserve) / GRID));
+
     return ids.map((id, i) => {
-      const col = Math.floor(i / rowsPerCol);
+      const col = Math.min(Math.floor(i / rowsPerCol), maxCols - 1);
       const row = i % rowsPerCol;
       return { id, x: baseX + col * GRID, y: baseY + row * GRID };
     });
@@ -456,7 +464,7 @@ const DesktopSection: React.FC = () => {
       const w = Math.round(clip.width);
       const h = Math.round(clip.height);
 
-      const PAD = 6; // bezpečná mezera, ať ikony "neškrtají" o okraj
+      const PAD = 15; // bezpečná mezera, ať ikony "neškrtají" o okraj (zvýšeno z 6px)
       setClippyRect({ x: x - PAD, y: y - PAD, w: w + 2 * PAD, h: h + 2 * PAD });
     };
 
