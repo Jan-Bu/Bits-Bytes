@@ -13,14 +13,8 @@ const MAX_SCORE = 99999; // Maximální možné skóre (anti-cheat)
 const MAX_SCORES_STORED = 1000;
 
 function createStore() {
-  const siteID = process.env.NETLIFY_SITE_ID;
-  const token = process.env.NETLIFY_AUTH_TOKEN;
-
-  if (siteID && token) {
-    return getStore({ name: 'flappy-bits', siteID, token });
-  }
-
-  // Fallback – pokud běží v nativním Netlify Blobs prostředí
+  // Netlify automaticky nastaví siteID a token když funkce běží na Netlify
+  // Nepotřebujeme je explicitně předávat
   return getStore('flappy-bits');
 }
 
