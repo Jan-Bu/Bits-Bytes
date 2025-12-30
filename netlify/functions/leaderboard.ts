@@ -13,15 +13,19 @@ const MAX_SCORE = 99999; // Maximální možné skóre (anti-cheat)
 const MAX_SCORES_STORED = 1000;
 
 function createStore() {
-  // Zkusit všechny dostupné environment proměnné
+  // Použít environment proměnné z Netlify
   const siteID = process.env.SITE_ID || process.env.NETLIFY_SITE_ID || '14d1ea5d-2320-4068-b6dc-ed8335d1f5a9';
-  const token = process.env.NETLIFY_AUTH_TOKEN || 'nfp_cVZZMfwnJaLZM5R7T9Hq3r9QEgWYSTUi0c70';
+  const token = process.env.NETLIFY_AUTH_TOKEN;
 
   console.log('Environment check:', {
     hasSiteId: !!siteID,
     hasToken: !!token,
     hasContext: !!process.env.NETLIFY_BLOBS_CONTEXT,
   });
+
+  if (!token) {
+    throw new Error('NETLIFY_AUTH_TOKEN environment variable is not set');
+  }
 
   return getStore({
     name: 'flappy-bits',
