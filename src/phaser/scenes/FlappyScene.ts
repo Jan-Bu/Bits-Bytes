@@ -21,6 +21,7 @@ export class FlappyScene extends Phaser.Scene {
   private nameInputText?: Phaser.GameObjects.Text;
   private currentPlayerName = '';
   private isTop10 = false;
+  private isSubmittingScore = false; // Flag pro prevenci dvojitého odeslání
   private birdSprite?: Phaser.GameObjects.Sprite; // Reference pro sprite s animací
   private background!: Phaser.GameObjects.TileSprite; // Pozadí pro scrollování
 
@@ -596,7 +597,10 @@ export class FlappyScene extends Phaser.Scene {
   }
 
   private async submitScore() {
-    if (!this.currentPlayerName) return;
+    // Prevence dvojitého odeslání
+    if (!this.currentPlayerName || this.isSubmittingScore) return;
+
+    this.isSubmittingScore = true;
 
     try {
       const response = await fetch('/.netlify/functions/leaderboard', {
@@ -628,6 +632,8 @@ export class FlappyScene extends Phaser.Scene {
       this.leaderboardText.setY(this.scale.height / 2);
     } catch (error) {
       console.error('Failed to submit score:', error);
+      // Reset flag při chybě, aby uživatel mohl zkusit znovu
+      this.isSubmittingScore = false;
       // Zobrazit chybu uživateli
       if (this.nameInputText) {
         this.nameInputText.setColor('#ff0000');
@@ -657,6 +663,7 @@ export class FlappyScene extends Phaser.Scene {
     // Reset name input state
     this.currentPlayerName = '';
     this.isTop10 = false;
+    this.isSubmittingScore = false;
 
     // Reset rychlosti na výchozí hodnoty
     this.currentPipeSpeed = this.BASE_PIPE_SPEED;
