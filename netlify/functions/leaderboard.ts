@@ -13,9 +13,18 @@ const MAX_SCORE = 99999; // Maximální možné skóre (anti-cheat)
 const MAX_SCORES_STORED = 1000;
 
 function createStore() {
-  // Netlify automaticky nastaví siteID a token když funkce běží na Netlify
-  // Nepotřebujeme je explicitně předávat
-  return getStore('flappy-bits');
+  // Zkusit všechny dostupné environment proměnné
+  const siteID = process.env.SITE_ID || process.env.NETLIFY_SITE_ID || '14d1ea5d-2320-4068-b6dc-ed8335d1f5a9';
+
+  console.log('Environment check:', {
+    hasSiteId: !!siteID,
+    hasContext: !!process.env.NETLIFY_BLOBS_CONTEXT,
+  });
+
+  return getStore({
+    name: 'flappy-bits',
+    siteID: siteID,
+  });
 }
 
 // Simple rate limiting (IP-based)
