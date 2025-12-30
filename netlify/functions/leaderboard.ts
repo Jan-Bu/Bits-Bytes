@@ -66,14 +66,18 @@ export const handler: Handler = async (event) => {
 
   let store;
   try {
+    console.log('Initializing Blobs store...');
     store = createStore();
+    console.log('Blobs store initialized successfully');
   } catch (error) {
     console.error('Blobs initialization error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Leaderboard temporarily unavailable. Blobs storage not configured.',
+        details: errorMessage,
       }),
     };
   }
@@ -81,7 +85,9 @@ export const handler: Handler = async (event) => {
   // GET - získat top skóre
   if (event.httpMethod === 'GET') {
     try {
+      console.log('Fetching scores from Blobs...');
       const scoresData = await store.get(BLOB_KEY, { type: 'json' }) as Score[] | null;
+      console.log('Scores fetched:', scoresData ? `${scoresData.length} entries` : 'no data');
       const scores = scoresData || [];
 
       // Seřadit sestupně a vzít top 100
@@ -96,6 +102,8 @@ export const handler: Handler = async (event) => {
       };
     } catch (error) {
       console.error('Blobs GET error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error details:', errorMessage);
       // Return empty array instead of crashing
       return {
         statusCode: 200,
