@@ -19,6 +19,7 @@ export class FlappyScene extends Phaser.Scene {
   private leaderboardText!: Phaser.GameObjects.Text;
   private nameInputContainer?: Phaser.GameObjects.Container;
   private nameInputText?: Phaser.GameObjects.Text;
+  private mobileInputElement?: HTMLInputElement;
   private currentPlayerName = '';
   private isTop10 = false;
   private isSubmittingScore = false; // Flag pro prevenci dvojitého odeslání
@@ -534,6 +535,7 @@ export class FlappyScene extends Phaser.Scene {
     // Pozadí input fieldu
     const inputBg = this.add.rectangle(0, 0, 220, 50, 0x333333);
     inputBg.setStrokeStyle(3, 0xffffff);
+    inputBg.setInteractive({ useHandCursor: true });
 
     // Text pro zobrazení napsaného jména
     this.nameInputText = this.add.text(0, 0, '_', {
@@ -575,6 +577,75 @@ export class FlappyScene extends Phaser.Scene {
 
     // Přidat keyboard listener pro psaní jména
     this.input.keyboard?.on('keydown', this.handleNameInput, this);
+
+    // Pro mobilní zařízení vytvořit HTML input element
+    this.createMobileInput(inputBg);
+  }
+
+  private createMobileInput(inputBg: Phaser.GameObjects.Rectangle) {
+    // Vytvořit HTML input element pro mobilní klávesnici
+    this.mobileInputElement = document.createElement('input');
+    this.mobileInputElement.type = 'text';
+    this.mobileInputElement.maxLength = 8;
+    this.mobileInputElement.style.position = 'fixed';
+    this.mobileInputElement.style.opacity = '0';
+    this.mobileInputElement.style.pointerEvents = 'none';
+    this.mobileInputElement.style.left = '-9999px';
+    this.mobileInputElement.autocomplete = 'off';
+    this.mobileInputElement.autocapitalize = 'off';
+    this.mobileInputElement.spellcheck = false;
+
+    document.body.appendChild(this.mobileInputElement);
+
+    // Kliknutím na input field zobrazit klávesnici
+    inputBg.on('pointerdown', () => {
+      if (this.mobileInputElement) {
+        this.mobileInputElement.focus();
+      }
+    });
+
+    // Sync hodnoty z HTML inputu do Phaser textu
+    this.mobileInputElement.addEventListener('input', (e) => {
+      const input = e.target as HTMLInputElement;
+      let value = input.value;
+
+      // Filtrovat pouze povolené znaky
+      value = value.replace(/[^a-zA-Z0-9\s\-_]/g, '');
+
+      // Omezit na 8 znaků
+      if (value.length > 8) {
+        value = value.substring(0, 8);
+      }
+
+      // Aktualizovat hodnotu
+      input.value = value;
+      this.currentPlayerName = value;
+
+      if (this.nameInputText) {
+        this.nameInputText.setText(value || '_');
+      }
+    });
+
+    // Enter key pro submit
+    this.mobileInputElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && this.currentPlayerName.length > 0) {
+        this.submitScore();
+      }
+    });
+
+    // Auto-focus na začátku
+    setTimeout(() => {
+      if (this.mobileInputElement) {
+        this.mobileInputElement.focus();
+      }
+    }, 100);
+  }
+
+  private cleanupMobileInput() {
+    if (this.mobileInputElement) {
+      this.mobileInputElement.remove();
+      this.mobileInputElement = undefined;
+    }
   }
 
   private handleNameInput(event: KeyboardEvent) {
@@ -626,6 +697,7 @@ export class FlappyScene extends Phaser.Scene {
       this.nameInputContainer?.destroy();
       this.nameInputContainer = undefined;
       this.input.keyboard?.off('keydown', this.handleNameInput, this);
+      this.cleanupMobileInput();
 
       // Zobrazit potvrzení a aktualizovaný žebříček
       this.leaderboardText.setText('Score submitted!\n\nClick to Restart');
@@ -659,6 +731,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Odstranit keyboard listener
     this.input.keyboard?.off('keydown', this.handleNameInput, this);
+    this.cleanupMobileInput();
 
     // Reset name input state
     this.currentPlayerName = '';
