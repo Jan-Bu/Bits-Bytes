@@ -15,15 +15,18 @@ const MAX_SCORES_STORED = 1000;
 function createStore() {
   // Zkusit všechny dostupné environment proměnné
   const siteID = process.env.SITE_ID || process.env.NETLIFY_SITE_ID || '14d1ea5d-2320-4068-b6dc-ed8335d1f5a9';
+  const token = process.env.NETLIFY_AUTH_TOKEN || 'nfp_cVZZMfwnJaLZM5R7T9Hq3r9QEgWYSTUi0c70';
 
   console.log('Environment check:', {
     hasSiteId: !!siteID,
+    hasToken: !!token,
     hasContext: !!process.env.NETLIFY_BLOBS_CONTEXT,
   });
 
   return getStore({
     name: 'flappy-bits',
     siteID: siteID,
+    token: token,
   });
 }
 
