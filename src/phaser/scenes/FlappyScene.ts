@@ -1084,9 +1084,10 @@ export class FlappyScene extends Phaser.Scene {
     };
 
     // Slider drag handler
-    this.input.on('drag', (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject, dragX: number) => {
+    this.input.on('drag', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
       if (gameObject !== sliderHandle) return;
-      updateVolume(dragX);
+      // Použít pointer.x místo dragX pro správnou pozici
+      updateVolume(pointer.x);
     });
 
     // Click on slider background to jump to position
