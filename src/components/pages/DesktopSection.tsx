@@ -59,52 +59,79 @@ const DesktopIcon: React.FC<{
   TASKBAR_HEIGHT: number;
   snapX: (n: number) => number;
   snapY: (n: number) => number;
-  blockedRects?: Array<{ x:number; y:number; w:number; h:number }>;
-  occupiedRects?: Array<{ x:number; y:number; w:number; h:number }>;
+  blockedRects?: Array<{ x: number; y: number; w: number; h: number }>;
+  occupiedRects?: Array<{ x: number; y: number; w: number; h: number }>;
   GRID: number;
 }> = ({
   id, label, x, y, onOpen, onMove, src, desktopRef,
   ICON_SIZE, DESKTOP_MARGIN, TASKBAR_HEIGHT, snapX, snapY,
   blockedRects = [], occupiedRects = [], GRID,
 }) => {
-  const local = useRef<{ dx: number; dy: number; dragging: boolean; startedAt?: { x: number; y: number } }>({
-    dx: 0, dy: 0, dragging: false,
-  });
-  const raf = useRef<number | null>(null);
+    const local = useRef<{ dx: number; dy: number; dragging: boolean; startedAt?: { x: number; y: number } }>({
+      dx: 0, dy: 0, dragging: false,
+    });
+    const raf = useRef<number | null>(null);
 
-  const clampToDesktop = (nx: number, ny: number) => {
-    const desk = desktopRef.current;
-    if (!desk) return { nx, ny };
-    const rect = desk.getBoundingClientRect();
-    const maxX = rect.width - DESKTOP_MARGIN - ICON_SIZE;
-    const maxY = rect.height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 40); // +40px pro label
-    return {
-      nx: Math.min(Math.max(nx, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxX)),
-      ny: Math.min(Math.max(ny, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxY)),
+    const clampToDesktop = (nx: number, ny: number) => {
+      const desk = desktopRef.current;
+      if (!desk) return { nx, ny };
+      const rect = desk.getBoundingClientRect();
+      const maxX = rect.width - DESKTOP_MARGIN - ICON_SIZE;
+      const maxY = rect.height - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 40); // +40px pro label
+      return {
+        nx: Math.min(Math.max(nx, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxX)),
+        ny: Math.min(Math.max(ny, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxY)),
+      };
     };
-  };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    const target = e.currentTarget as HTMLDivElement;
-    if (e.isPrimary) target.setPointerCapture(e.pointerId);
+    const onPointerDown = (e: React.PointerEvent) => {
+      e.preventDefault();
+      const target = e.currentTarget as HTMLDivElement;
+      if (e.isPrimary) target.setPointerCapture(e.pointerId);
 
-    local.current.dragging = true;
+      local.current.dragging = true;
 
-    const rect = desktopRef.current?.getBoundingClientRect();
-    const desktopLeft = rect?.left ?? 0;
-    const desktopTop = rect?.top ?? 0;
-    local.current.dx = e.clientX - (desktopLeft + x);
-    local.current.dy = e.clientY - (desktopTop + y);
-    local.current.startedAt = { x: e.clientX, y: e.clientY };
-  };
+      const rect = desktopRef.current?.getBoundingClientRect();
+      const desktopLeft = rect?.left ?? 0;
+      const desktopTop = rect?.top ?? 0;
+      local.current.dx = e.clientX - (desktopLeft + x);
+      local.current.dy = e.clientY - (desktopTop + y);
+      local.current.startedAt = { x: e.clientX, y: e.clientY };
+    };
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!local.current.dragging) return;
-    e.preventDefault();
+    const onPointerMove = (e: React.PointerEvent) => {
+      if (!local.current.dragging) return;
+      e.preventDefault();
 
-    if (raf.current) cancelAnimationFrame(raf.current);
-    raf.current = requestAnimationFrame(() => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+      raf.current = requestAnimationFrame(() => {
+        const rect = desktopRef.current?.getBoundingClientRect();
+        const desktopLeft = rect?.left ?? 0;
+        const desktopTop = rect?.top ?? 0;
+
+        const nxRaw = e.clientX - desktopLeft - local.current.dx;
+        const nyRaw = e.clientY - desktopTop - local.current.dy;
+
+        const s = local.current.startedAt;
+        if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) < 4) return;
+
+        const { nx, ny } = clampToDesktop(nxRaw, nyRaw);
+        onMove(id, nx, ny);
+      });
+    };
+
+    // --- Kolize ---
+    const intersects = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
+      !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+
+    const iconRectAt = (xx: number, yy: number) => ({ x: xx, y: yy, w: ICON_SIZE, h: ICON_SIZE + 40 }); // +40px pro label místo +30px
+
+    const finishDrag = (e: React.PointerEvent) => {
+      const target = e.currentTarget as HTMLDivElement;
+      try { target.releasePointerCapture(e.pointerId); } catch { }
+      if (!local.current.dragging) return;
+      local.current.dragging = false;
+
       const rect = desktopRef.current?.getBoundingClientRect();
       const desktopLeft = rect?.left ?? 0;
       const desktopTop = rect?.top ?? 0;
@@ -112,150 +139,123 @@ const DesktopIcon: React.FC<{
       const nxRaw = e.clientX - desktopLeft - local.current.dx;
       const nyRaw = e.clientY - desktopTop - local.current.dy;
 
-      const s = local.current.startedAt;
-      if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) < 4) return;
-
+      // první clamp + snap
       const { nx, ny } = clampToDesktop(nxRaw, nyRaw);
-      onMove(id, nx, ny);
-    });
-  };
+      let sx = snapX(nx);
+      let sy = snapY(ny);
 
-  // --- Kolize ---
-  const intersects = (a: {x:number;y:number;w:number;h:number}, b:{x:number;y:number;w:number;h:number}) =>
-    !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+      // hranice plochy pro BFS
+      const deskRect = desktopRef.current?.getBoundingClientRect();
+      const maxX = (deskRect?.width ?? window.innerWidth) - DESKTOP_MARGIN - ICON_SIZE;
+      const maxY = (deskRect?.height ?? window.innerHeight) - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 40); // +40px pro label
+      const minX = DESKTOP_MARGIN;
+      const minY = DESKTOP_MARGIN;
+      const withinBounds = (xx: number, yy: number) =>
+        xx >= minX && xx <= maxX && yy >= minY && yy <= maxY;
 
-  const iconRectAt = (xx:number, yy:number) => ({ x: xx, y: yy, w: ICON_SIZE, h: ICON_SIZE + 40 }); // +40px pro label místo +30px
+      const forbidden = [...blockedRects, ...occupiedRects];
 
-  const finishDrag = (e: React.PointerEvent) => {
-    const target = e.currentTarget as HTMLDivElement;
-    try { target.releasePointerCapture(e.pointerId); } catch {}
-    if (!local.current.dragging) return;
-    local.current.dragging = false;
+      // Pokud koliduje, najdi nejbližší volné místo po mřížce
+      const startHit = forbidden.some(b => intersects(iconRectAt(sx, sy), b));
+      if (startHit) {
+        const tried = new Set<string>();
+        const key = (xx: number, yy: number) => `${xx},${yy}`;
+        const q: Array<{ x: number; y: number }> = [{ x: sx, y: sy }];
+        let found: { x: number; y: number } | null = null;
 
-    const rect = desktopRef.current?.getBoundingClientRect();
-    const desktopLeft = rect?.left ?? 0;
-    const desktopTop = rect?.top ?? 0;
+        // pořadí směrů kvůli „přirozenému“ pocitu
+        const dirs = [
+          { dx: -GRID, dy: 0 },
+          { dx: GRID, dy: 0 },
+          { dx: 0, dy: -GRID },
+          { dx: 0, dy: GRID },
+        ];
 
-    const nxRaw = e.clientX - desktopLeft - local.current.dx;
-    const nyRaw = e.clientY - desktopTop - local.current.dy;
+        let steps = 0;
+        const MAX_STEPS = 400;
 
-    // první clamp + snap
-    const { nx, ny } = clampToDesktop(nxRaw, nyRaw);
-    let sx = snapX(nx);
-    let sy = snapY(ny);
+        while (q.length && steps++ < MAX_STEPS) {
+          const cur = q.shift()!;
+          if (tried.has(key(cur.x, cur.y))) continue;
+          tried.add(key(cur.x, cur.y));
 
-    // hranice plochy pro BFS
-    const deskRect = desktopRef.current?.getBoundingClientRect();
-    const maxX = (deskRect?.width ?? window.innerWidth) - DESKTOP_MARGIN - ICON_SIZE;
-    const maxY = (deskRect?.height ?? window.innerHeight) - (DESKTOP_MARGIN + TASKBAR_HEIGHT) - (ICON_SIZE + 40); // +40px pro label
-    const minX = DESKTOP_MARGIN;
-    const minY = DESKTOP_MARGIN;
-    const withinBounds = (xx:number, yy:number) =>
-      xx >= minX && xx <= maxX && yy >= minY && yy <= maxY;
+          if (!withinBounds(cur.x, cur.y)) continue;
 
-    const forbidden = [...blockedRects, ...occupiedRects];
+          const hit = forbidden.some(b => intersects(iconRectAt(cur.x, cur.y), b));
+          if (!hit) { found = cur; break; }
 
-    // Pokud koliduje, najdi nejbližší volné místo po mřížce
-    const startHit = forbidden.some(b => intersects(iconRectAt(sx, sy), b));
-    if (startHit) {
-      const tried = new Set<string>();
-      const key = (xx:number, yy:number) => `${xx},${yy}`;
-      const q: Array<{x:number;y:number}> = [{ x: sx, y: sy }];
-      let found: {x:number;y:number} | null = null;
-
-      // pořadí směrů kvůli „přirozenému“ pocitu
-      const dirs = [
-        { dx: -GRID, dy: 0 },
-        { dx:  GRID, dy: 0 },
-        { dx: 0,     dy: -GRID },
-        { dx: 0,     dy:  GRID },
-      ];
-
-      let steps = 0;
-      const MAX_STEPS = 400;
-
-      while (q.length && steps++ < MAX_STEPS) {
-        const cur = q.shift()!;
-        if (tried.has(key(cur.x, cur.y))) continue;
-        tried.add(key(cur.x, cur.y));
-
-        if (!withinBounds(cur.x, cur.y)) continue;
-
-        const hit = forbidden.some(b => intersects(iconRectAt(cur.x, cur.y), b));
-        if (!hit) { found = cur; break; }
-
-        for (const d of dirs) {
-          const nx = cur.x + d.dx;
-          const ny = cur.y + d.dy;
-          if (withinBounds(nx, ny) && !tried.has(key(nx, ny))) {
-            q.push({ x: nx, y: ny });
+          for (const d of dirs) {
+            const nx = cur.x + d.dx;
+            const ny = cur.y + d.dy;
+            if (withinBounds(nx, ny) && !tried.has(key(nx, ny))) {
+              q.push({ x: nx, y: ny });
+            }
           }
         }
+
+        if (found) { sx = found.x; sy = found.y; }
+        const cl = clampToDesktop(sx, sy);
+        sx = snapX(cl.nx);
+        sy = snapY(cl.ny);
       }
 
-      if (found) { sx = found.x; sy = found.y; }
-      const cl = clampToDesktop(sx, sy);
-      sx = snapX(cl.nx);
-      sy = snapY(cl.ny);
-    }
+      onMove(id, sx, sy);
+    };
 
-    onMove(id, sx, sy);
-  };
+    const onPointerUp = (e: React.PointerEvent) => {
+      e.preventDefault();
+      finishDrag(e);
+    };
 
-  const onPointerUp = (e: React.PointerEvent) => {
-    e.preventDefault();
-    finishDrag(e);
-  };
+    const onPointerCancel = (e: React.PointerEvent) => {
+      if (!local.current.dragging) return;
+      e.preventDefault();
+      const target = e.currentTarget as HTMLDivElement;
+      try { target.releasePointerCapture(e.pointerId); } catch { }
+      local.current.dragging = false;
+    };
 
-  const onPointerCancel = (e: React.PointerEvent) => {
-    if (!local.current.dragging) return;
-    e.preventDefault();
-    const target = e.currentTarget as HTMLDivElement;
-    try { target.releasePointerCapture(e.pointerId); } catch {}
-    local.current.dragging = false;
-  };
-
-  return (
-    <div
-      role="button"
-      onDoubleClick={() => { if (!('ontouchstart' in window)) onOpen(id); }} // PC: dvojklik
-      onClick={() => { if ('ontouchstart' in window) onOpen(id); }}          // Mobile/Tablet: jednoklik
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
-      onContextMenu={(e) => e.preventDefault()}
-      className="absolute flex flex-col items-center cursor-default select-none group touch-none"
-      style={{
-        left: x,
-        top: y,
-        width: ICON_SIZE + 28,
-        userSelect: 'none',
-      }}
-    >
+    return (
       <div
-        className="grid place-items-center rounded-[2px] group-hover:bg-white/10 select-none [-webkit-user-drag:none]"
-        style={{ width: ICON_SIZE, height: ICON_SIZE, imageRendering: 'pixelated' }}
+        role="button"
+        onDoubleClick={() => { if (!('ontouchstart' in window)) onOpen(id); }} // PC: dvojklik
+        onClick={() => { if ('ontouchstart' in window) onOpen(id); }}          // Mobile/Tablet: jednoklik
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onContextMenu={(e) => e.preventDefault()}
+        className="absolute flex flex-col items-center cursor-default select-none group touch-none"
+        style={{
+          left: x,
+          top: y,
+          width: ICON_SIZE + 28,
+          userSelect: 'none',
+        }}
       >
-        <img
-          src={src}
-          alt={label}
-          className="select-none pointer-events-none [-webkit-user-drag:none]"
-          style={{
-            width: ICON_SIZE,
-            height: ICON_SIZE,
-            objectFit: 'contain',
-            imageRendering: 'pixelated',
-          }}
-          draggable={false}
-        />
+        <div
+          className="grid place-items-center rounded-[2px] group-hover:bg-white/10 select-none [-webkit-user-drag:none]"
+          style={{ width: ICON_SIZE, height: ICON_SIZE, imageRendering: 'pixelated' }}
+        >
+          <img
+            src={src}
+            alt={label}
+            className="select-none pointer-events-none [-webkit-user-drag:none]"
+            style={{
+              width: ICON_SIZE,
+              height: ICON_SIZE,
+              objectFit: 'contain',
+              imageRendering: 'pixelated',
+            }}
+            draggable={false}
+          />
+        </div>
+        <div className="mt-2 text-white text-center leading-tight drop-shadow-[1px_1px_0_rgba(0,0,0,0.9)] whitespace-pre-wrap break-words px-1 text-[13px] sm:text-[14px] md:text-[15px] select-none">
+          {label}
+        </div>
       </div>
-      <div className="mt-2 text-white text-center leading-tight drop-shadow-[1px_1px_0_rgba(0,0,0,0.9)] whitespace-pre-wrap break-words px-1 text-[13px] sm:text-[14px] md:text-[15px] select-none">
-        {label}
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
 const DesktopSection: React.FC = () => {
   const { t, language } = useTranslation();
@@ -367,14 +367,14 @@ const DesktopSection: React.FC = () => {
     const baseX = snapCoord(DESKTOP_MARGIN);
     const baseY = snapCoord(DESKTOP_MARGIN);
     return [
-      { id: 'about',   x: baseX, y: baseY + 0 * GRID },
-      { id: 'services',x: baseX, y: baseY + 1 * GRID },
+      { id: 'about', x: baseX, y: baseY + 0 * GRID },
+      { id: 'services', x: baseX, y: baseY + 1 * GRID },
       { id: 'pricing', x: baseX, y: baseY + 2 * GRID },
-      { id: 'blog',    x: baseX, y: baseY + 3 * GRID },
+      { id: 'blog', x: baseX, y: baseY + 3 * GRID },
       { id: 'contact', x: baseX, y: baseY + 4 * GRID },
-      { id: 'terms',   x: baseX, y: baseY + 5 * GRID },
-      { id: 'gdpr',    x: baseX, y: baseY + 6 * GRID },
-      { id: 'flappy',  x: baseX, y: baseY + 7 * GRID },
+      { id: 'terms', x: baseX, y: baseY + 5 * GRID },
+      { id: 'gdpr', x: baseX, y: baseY + 6 * GRID },
+      { id: 'flappy', x: baseX, y: baseY + 7 * GRID },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bp, GRID, DESKTOP_MARGIN, TASKBAR_HEIGHT, ICON_SIZE, fourColXs]);
@@ -448,7 +448,7 @@ const DesktopSection: React.FC = () => {
   };
 
   // ===== Přesné měření Clippyho (blokovací obdélník) =====
-  const [clippyRect, setClippyRect] = useState<{ x:number; y:number; w:number; h:number } | null>(null);
+  const [clippyRect, setClippyRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
   useEffect(() => {
     const recompute = () => {
@@ -480,17 +480,128 @@ const DesktopSection: React.FC = () => {
     };
   }, [language]); // label pod Clippym se může lišit výškou
 
+  // ===== Měření skutečné výšky taskbaru (dynamicky) =====
+  const [measuredTaskbarHeight, setMeasuredTaskbarHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const measure = () => {
+      const desk = desktopRef.current;
+      if (!desk) { setMeasuredTaskbarHeight(null); return; }
+      const tb = desk.querySelector('[data-bb-taskbar]') as HTMLElement | null;
+      const h = tb?.getBoundingClientRect().height ?? null;
+      setMeasuredTaskbarHeight(h);
+    };
+
+    const id = window.setTimeout(measure, 0);
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure as any);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure as any);
+    };
+  }, []);
+
+  // pokud máme skutečnou hodnotu, dejme ji přednost (ale nikdy méně než statická rezerva)
+  const EFFECTIVE_TASKBAR_HEIGHT = Math.max(TASKBAR_HEIGHT, measuredTaskbarHeight ?? 0);
+
+  // Po změně efektivní výšky taskbaru přepočti pozice ikon (aby se nevykryly)
+  // Zajistíme, že se ikony nikdy nepřekryjí — pokud se nevejdou, hledáme nejbližší volné místo po mřížce (BFS).
+  const resolveIconPositions = () => {
+    const desk = desktopRef.current?.getBoundingClientRect();
+    if (!desk) return;
+
+    const maxX = desk.width - DESKTOP_MARGIN - ICON_SIZE;
+    const maxY = desk.height - (DESKTOP_MARGIN + EFFECTIVE_TASKBAR_HEIGHT) - (ICON_SIZE + 40);
+
+    const clampToDesk = (nx: number, ny: number) => ({
+      nx: Math.min(Math.max(nx, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxX)),
+      ny: Math.min(Math.max(ny, DESKTOP_MARGIN), Math.max(DESKTOP_MARGIN, maxY)),
+    });
+
+    const intersects = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
+      !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+
+    // grid-based placement: compute columns/rows and allocate cells uniquely
+    const cellRect = (col: number, row: number) => ({ x: DESKTOP_MARGIN + col * GRID, y: DESKTOP_MARGIN + row * GRID, w: ICON_SIZE, h: ICON_SIZE + 40 });
+
+    const cols = Math.max(1, Math.floor((maxX - DESKTOP_MARGIN) / GRID) + 1);
+    const rows = Math.max(1, Math.floor((maxY - DESKTOP_MARGIN) / GRID) + 1);
+
+    // snapshot aktuálních pozic — map to desired grid cells
+    const entries = (Object.entries(iconPos) as Array<[AppId, { x: number; y: number }]>)
+      .map(([id, p]) => {
+        const sx = snapX(p.x);
+        const sy = snapY(p.y);
+        const col = Math.round((sx - DESKTOP_MARGIN) / GRID);
+        const row = Math.round((sy - DESKTOP_MARGIN) / GRID);
+        return { id, col: Math.min(Math.max(0, col), cols - 1), row: Math.min(Math.max(0, row), rows - 1) };
+      });
+
+    // Column-major allocation: left->right, top->bottom
+    entries.sort((a, b) => (a.col - b.col) || (a.row - b.row));
+
+    const occupied = new Set<string>();
+    const placedRects: Array<{ x: number; y: number; w: number; h: number }> = [];
+
+    // mark clippy cells as occupied
+    if (clippyRect) {
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          if (intersects(cellRect(c, r), clippyRect)) occupied.add(`${c},${r}`);
+        }
+      }
+    }
+
+    const result: Record<AppId, { x: number; y: number }> = {} as any;
+
+    const total = cols * rows;
+    const index = (c: number, r: number) => c * rows + r; // column-major index
+
+    for (const e of entries) {
+      const startIdx = index(e.col, e.row);
+      let chosen: { c: number; r: number } | null = null;
+
+      for (let off = 0; off < total; off++) {
+        const idx = (startIdx + off) % total;
+        const c = Math.floor(idx / rows);
+        const r = idx % rows;
+        const key = `${c},${r}`;
+        if (occupied.has(key)) continue;
+        const rect = cellRect(c, r);
+        const hit = placedRects.some(p => intersects(p, rect));
+        if (hit) continue;
+        // acceptable
+        chosen = { c, r };
+        break;
+      }
+
+      const place = chosen ?? { c: e.col, r: e.row };
+      const finalRect = cellRect(place.c, place.r);
+      occupied.add(`${place.c},${place.r}`);
+      placedRects.push(finalRect);
+      result[e.id] = { x: finalRect.x, y: finalRect.y };
+    }
+
+    setIconPos(() => result);
+  };
+
+  // Run on mount (initial layout) and whenever taskbar height or clippy changes
+  useEffect(() => { resolveIconPositions(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => { resolveIconPositions(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [EFFECTIVE_TASKBAR_HEIGHT, clippyRect]);
+
   // ⚠️ About: fullscreen přes aboutFullscreenContent. Ostatní jako okna.
   const renderContent = (id: DesktopAppId) => {
     switch (id) {
-      case 'about':   return <AboutSection t={t} onExit={() => closeApp('about')} />;
-      case 'services':return <ServicesSection t={t} embedded onOpenApp={(aid: AppId) => openApp(aid)} onOpenWeb={(url: string, title?: string) => openWebview(url, title)} />;
+      case 'about': return <AboutSection t={t} onExit={() => closeApp('about')} />;
+      case 'services': return <ServicesSection t={t} embedded onOpenApp={(aid: AppId) => openApp(aid)} onOpenWeb={(url: string, title?: string) => openWebview(url, title)} />;
       case 'pricing': return <PricingSection t={t} />;
-      case 'blog':    return <BlogSection t={t} />;
+      case 'blog': return <BlogSection t={t} />;
       case 'contact': return <ContactSection t={t} embedded />;
-      case 'terms':   return <TermsSection t={t} />;
-      case 'gdpr':    return <GDPRSection t={t} />;
-      case 'flappy':  return <FlappySection t={t} onExit={() => closeApp('flappy')} />;
+      case 'terms': return <TermsSection t={t} />;
+      case 'gdpr': return <GDPRSection t={t} />;
+      case 'flappy': return <FlappySection t={t} onExit={() => closeApp('flappy')} />;
       case 'webview':
         return (
           <div className="w-full h-full bg-white">
@@ -527,9 +638,9 @@ const DesktopSection: React.FC = () => {
         const src = iconMeta[appId].src;
 
         // všechny ostatní ikony → occupied rects
-        const occupiedRects = (Object.entries(iconPos) as Array<[AppId, {x:number;y:number}]>)
+        const occupiedRects = (Object.entries(iconPos) as Array<[AppId, { x: number; y: number }]>)
           .filter(([otherId]) => otherId !== appId)
-          .map(([, p]) => ({ x: snapX(p.x), y: snapY(p.y), w: ICON_SIZE, h: ICON_SIZE + 30 }));
+          .map(([, p]) => ({ x: snapX(p.x), y: snapY(p.y), w: ICON_SIZE, h: ICON_SIZE + 40 }));
 
         return (
           <DesktopIcon
@@ -544,7 +655,7 @@ const DesktopSection: React.FC = () => {
             desktopRef={desktopRef}
             ICON_SIZE={ICON_SIZE}
             DESKTOP_MARGIN={DESKTOP_MARGIN}
-            TASKBAR_HEIGHT={TASKBAR_HEIGHT}
+            TASKBAR_HEIGHT={EFFECTIVE_TASKBAR_HEIGHT}
             snapX={snapX}
             snapY={snapY}
             blockedRects={clippyRect ? [clippyRect] : []}
@@ -560,7 +671,7 @@ const DesktopSection: React.FC = () => {
         titles={titles as Record<AppId, string>}
         onFocus={(id) => bringToFront(id)}
         onClose={(id) => closeApp(id)}
-        onMinimize={(_id) => {}}
+        onMinimize={(_id) => { }}
         onMaximize={(id) => maximizeApp(id)}
         renderContent={(id) => renderContent(id as any)}
         aboutFullscreenContent={<AboutSection t={t} onExit={() => closeApp('about')} />}
@@ -570,7 +681,7 @@ const DesktopSection: React.FC = () => {
       <ClippyAssistant
         centered
         rightOffset={DESKTOP_MARGIN}
-        bottomOffset={TASKBAR_HEIGHT}
+        bottomOffset={EFFECTIVE_TASKBAR_HEIGHT}
         containerRef={clippyRef}
       />
     </div>

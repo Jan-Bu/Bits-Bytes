@@ -332,6 +332,7 @@ const Taskbar: React.FC<{
 
   return (
     <div
+      data-bb-taskbar
       className="fixed bottom-0 left-0 right-0 h-8 flex items-center gap-2 px-2"
       style={{
         background: WIN95.face,

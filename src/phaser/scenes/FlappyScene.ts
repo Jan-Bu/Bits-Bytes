@@ -158,7 +158,7 @@ export class FlappyScene extends Phaser.Scene {
       // Vytvořit animaci pro raketový pohon z sprite sheetu
       this.anims.create({
         key: 'thrust',
-        frames: this.anims.generateFrameNumbers('bird_thrust', { start: 0, end: -1 }), // všechny framy
+        frames: this.anims.generateFrameNumbers('bird_thrust'), // všechny framy
         frameRate: 15,
         repeat: -1, // Opakovat dokola
       });
@@ -474,9 +474,8 @@ export class FlappyScene extends Phaser.Scene {
 
       // Zjistit jestli je hráč v top 10
       const topScores = globalScores.slice(0, 10);
-      // Pokud je leaderboard prázdný nebo má méně než 10 položek, hráč je automaticky v top 10
-      // Nebo pokud má vyšší skóre než nejhorší v top 10
-      this.isTop10 = topScores.length < 10 || topScores.some((s: { score: number }) => s.score <= this.score);
+      const minScoreInTop = topScores.length > 0 ? topScores[topScores.length - 1].score : -Infinity;
+      this.isTop10 = topScores.length < 10 || this.score >= minScoreInTop;
 
       if (this.isTop10) {
         // Hráč je v top 10 - zobrazit NEW HIGH SCORE a input field
@@ -587,10 +586,15 @@ export class FlappyScene extends Phaser.Scene {
     this.mobileInputElement = document.createElement('input');
     this.mobileInputElement.type = 'text';
     this.mobileInputElement.maxLength = 8;
+    // Place input centrally but invisible so mobile keyboards open reliably
     this.mobileInputElement.style.position = 'fixed';
+    this.mobileInputElement.style.left = '50%';
+    this.mobileInputElement.style.top = '50%';
+    this.mobileInputElement.style.transform = 'translate(-50%, -50%)';
     this.mobileInputElement.style.opacity = '0';
-    this.mobileInputElement.style.pointerEvents = 'none';
-    this.mobileInputElement.style.left = '-9999px';
+    this.mobileInputElement.style.width = '1px';
+    this.mobileInputElement.style.height = '1px';
+    this.mobileInputElement.style.pointerEvents = 'auto';
     this.mobileInputElement.autocomplete = 'off';
     this.mobileInputElement.autocapitalize = 'off';
     this.mobileInputElement.spellcheck = false;
@@ -699,9 +703,29 @@ export class FlappyScene extends Phaser.Scene {
       this.input.keyboard?.off('keydown', this.handleNameInput, this);
       this.cleanupMobileInput();
 
-      // Zobrazit potvrzení a aktualizovaný žebříček
-      this.leaderboardText.setText('Score submitted!\n\nClick to Restart');
-      this.leaderboardText.setY(this.scale.height / 2);
+      // Pokusit se načíst aktualizovaný leaderboard a zobrazit top10
+      try {
+        const res = await fetch('/.netlify/functions/leaderboard');
+        const globalScores = await res.json();
+        const topScores = Array.isArray(globalScores) ? globalScores.slice(0, 10) : [];
+
+        let leaderboardStr = 'Score submitted!\n\n--- TOP 10 ---\n';
+        topScores.forEach((item: { score: number; name: string }, index: number) => {
+          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+          leaderboardStr += `${medal} ${index + 1}. ${item.name || 'Anonymous'} - ${item.score}\n`;
+        });
+
+        this.leaderboardText.setText(leaderboardStr + '\nClick to Restart');
+        this.leaderboardText.setY(this.scale.height / 2);
+        this.leaderboardText.setVisible(true);
+      } catch (err) {
+        this.leaderboardText.setText('Score submitted!\n\nClick to Restart');
+        this.leaderboardText.setY(this.scale.height / 2);
+        this.leaderboardText.setVisible(true);
+      }
+
+      // Reset submit flag (safe to allow future submissions in new games)
+      this.isSubmittingScore = false;
     } catch (error) {
       console.error('Failed to submit score:', error);
       // Reset flag při chybě, aby uživatel mohl zkusit znovu
