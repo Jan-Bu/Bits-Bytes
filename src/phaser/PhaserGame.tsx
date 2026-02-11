@@ -64,29 +64,42 @@ export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
       gameRef.current = null;
     };
   }, []); // <- žádné závislosti!
-
   // Reactively keep host height in sync with visualViewport on mobile
   useEffect(() => {
     const el = hostRef.current;
     if (!el) return;
 
     const setSizeFromViewport = () => {
-      // Prefer visualViewport for accurate mobile viewport (address bar)
       const vv: any = (window as any).visualViewport;
+      let w: number | string = '100vw';
+      let h: number | string = '100vh';
       if (vv && vv.width && vv.height) {
-        el.style.width = `${Math.round(vv.width)}px`;
-        el.style.height = `${Math.round(vv.height)}px`;
+        w = Math.round(vv.width);
+        h = Math.round(vv.height);
+        el.style.width = `${w}px`;
+        el.style.height = `${h}px`;
       } else {
         el.style.width = '100vw';
-        // fallback to innerHeight for older browsers
         el.style.height = `${window.innerHeight}px`;
+      }
+
+      // Also notify Phaser scale manager so it can recalc sizes
+      try {
+        const game = gameRef.current;
+        if (game && game.scale && typeof game.scale.resize === 'function') {
+          const rw = typeof w === 'number' ? w : window.innerWidth;
+          const rh = typeof h === 'number' ? h : window.innerHeight;
+          // @ts-ignore
+          game.scale.resize(rw, rh);
+        }
+      } catch (e) {
+        // ignore
       }
     };
 
     setSizeFromViewport();
     window.addEventListener('resize', setSizeFromViewport);
     window.addEventListener('orientationchange', setSizeFromViewport);
-    // visualViewport events
     if ((window as any).visualViewport) {
       (window as any).visualViewport.addEventListener('resize', setSizeFromViewport);
       (window as any).visualViewport.addEventListener('scroll', setSizeFromViewport);

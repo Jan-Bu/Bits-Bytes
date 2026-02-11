@@ -69,6 +69,48 @@ export class FlappyScene extends Phaser.Scene {
     return "'Jersey 25', Arial, sans-serif";
   }
 
+  // Handle resize: reposition and resize responsive UI elements
+  private handleResize(width: number, height: number) {
+    // Background
+    if (this.background) {
+      this.background.setPosition(width / 2, height / 2);
+      this.background.setDisplaySize(width, height);
+      this.background.setTileScale(1, Math.max(0.1, height / 512));
+    }
+
+    // Ground
+    if (this.ground) {
+      this.ground.setPosition(0, height - 50);
+      // Try to set display size for ground if available
+      try {
+        // @ts-ignore
+        if (typeof (this.ground as any).setDisplaySize === 'function') {
+          // @ts-ignore
+          (this.ground as any).setDisplaySize(width * 2, 50);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Score positions
+    if (this.scoreText) this.scoreText.setPosition(width / 2, 50);
+    if (this.highScoreText) this.highScoreText.setPosition(width - 20, 20);
+
+    // Reposition bird vertically to center when in menu
+    if (this.bird) {
+      if (this.gameState === 'menu') {
+        this.bird.setY(height / 2);
+      }
+    }
+
+    // Center UI containers
+    if (this.menuContainer) this.menuContainer.setPosition(width / 2, height / 2);
+    if (this.leaderboardContainer) this.leaderboardContainer.setPosition(width / 2, height / 2);
+    if (this.settingsContainer) this.settingsContainer.setPosition(width / 2, height / 2);
+    if (this.nameInputContainer) this.nameInputContainer.setPosition(width / 2, height / 2 + 80);
+  }
+
   init() {
     // Loading screen
     const { width, height } = this.scale;
@@ -265,6 +307,16 @@ export class FlappyScene extends Phaser.Scene {
     this.physics.add.overlap(this.bird, this.pipes, () => this.gameOver());
 
     // Menu se zobrazí až po fullscreen dialogu
+
+    // Reagovat na změnu velikosti (např. při změně adresního řádku nebo fullscreen)
+    this.scale.on('resize', (gameSize: any, baseSize: any) => {
+      const w = gameSize?.width ?? this.scale.width;
+      const h = gameSize?.height ?? this.scale.height;
+      this.handleResize(w, h);
+    });
+
+    // Inicialní sizing
+    this.handleResize(width, height);
   }
 
   update() {
