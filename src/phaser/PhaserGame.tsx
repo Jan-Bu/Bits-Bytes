@@ -64,66 +64,9 @@ export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
       gameRef.current = null;
     };
   }, []); // <- žádné závislosti!
-  // Reactively keep host height in sync with visualViewport on mobile
-  useEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
 
-    const setSizeFromViewport = () => {
-      const vv: any = (window as any).visualViewport;
-      let w: number = window.innerWidth;
-      let h: number = window.innerHeight;
-      if (vv && vv.width && vv.height) {
-        w = Math.round(vv.width);
-        h = Math.round(vv.height);
-      }
-
-      // update CSS var --vh so we can use calc(var(--vh) * 100) in CSS
-      try {
-        document.documentElement.style.setProperty('--vh', `${h * 0.01}px`);
-      } catch (e) {
-        // ignore
-      }
-
-      // Ensure host uses the computed --vh
-      el.style.width = `${w}px`;
-      el.style.height = 'calc(var(--vh) * 100)';
-
-      // Also notify Phaser scale manager so it can recalc sizes
-      try {
-        const game = gameRef.current;
-        if (game && game.scale && typeof game.scale.resize === 'function') {
-          const rw = w;
-          const rh = h;
-          // @ts-ignore
-          game.scale.resize(rw, rh);
-        }
-      } catch (e) {
-        // ignore
-      }
-    };
-
-    setSizeFromViewport();
-    window.addEventListener('resize', setSizeFromViewport);
-    window.addEventListener('orientationchange', setSizeFromViewport);
-    if ((window as any).visualViewport) {
-      (window as any).visualViewport.addEventListener('resize', setSizeFromViewport);
-      (window as any).visualViewport.addEventListener('scroll', setSizeFromViewport);
-    }
-
-    return () => {
-      window.removeEventListener('resize', setSizeFromViewport);
-      window.removeEventListener('orientationchange', setSizeFromViewport);
-      if ((window as any).visualViewport) {
-        (window as any).visualViewport.removeEventListener('resize', setSizeFromViewport);
-        (window as any).visualViewport.removeEventListener('scroll', setSizeFromViewport);
-      }
-    };
-  }, []);
-
-    return (
+  return (
     <div
-      id="phaser-host"
       ref={hostRef}
       style={{
         position: 'fixed',
@@ -132,8 +75,6 @@ export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
         height: '100dvh',
         background: '#000',
         overscrollBehavior: 'none',
-        display: 'block',
-        touchAction: 'manipulation',
       }}
     />
   );

@@ -69,117 +69,6 @@ export class FlappyScene extends Phaser.Scene {
     return "'Jersey 25', Arial, sans-serif";
   }
 
-  // Handle resize: reposition and resize responsive UI elements
-  private handleResize(width: number, height: number) {
-    // Background
-    if (this.background) {
-      this.background.setPosition(width / 2, height / 2);
-      this.background.setDisplaySize(width, height);
-      this.background.setTileScale(1, Math.max(0.1, height / 512));
-    }
-
-    // Ground
-    if (this.ground) {
-      this.ground.setPosition(0, height - 50);
-      // Try to set display size for ground if available
-      try {
-        // @ts-ignore
-        if (typeof (this.ground as any).setDisplaySize === 'function') {
-          // @ts-ignore
-          (this.ground as any).setDisplaySize(width * 2, 50);
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    // Score positions
-    if (this.scoreText) this.scoreText.setPosition(width / 2, 50);
-    if (this.highScoreText) this.highScoreText.setPosition(width - 20, 20);
-
-    // Reposition bird vertically to center when in menu
-    if (this.bird) {
-      if (this.gameState === 'menu') {
-        this.bird.setY(height / 2);
-      }
-    }
-
-    // Center UI containers
-    if (this.menuContainer) this.menuContainer.setPosition(width / 2, height / 2);
-    if (this.leaderboardContainer) this.leaderboardContainer.setPosition(width / 2, height / 2);
-    if (this.settingsContainer) this.settingsContainer.setPosition(width / 2, height / 2);
-    if (this.nameInputContainer) this.nameInputContainer.setPosition(width / 2, height / 2 + 80);
-  }
-
-  // Detect common mobile user agents
-  private isMobileDevice(): boolean {
-    try {
-      return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Instead of invoking the Fullscreen API on mobile (which Safari often blocks/doesn't behave as expected),
-  // expand the host container to occupy the largest available viewport area inside the page.
-  private async toggleMaximizeWithinPage(): Promise<void> {
-    const host = document.getElementById('phaser-host');
-    if (!host) return;
-
-    const expanded = host.classList.toggle('bb-expanded');
-
-    if (expanded) {
-      const vv: any = (window as any).visualViewport;
-      const w = vv && vv.width ? Math.round(vv.width) : window.innerWidth;
-      const h = vv && vv.height ? Math.round(vv.height) : window.innerHeight;
-
-      // update CSS var for vh based sizing
-      try {
-        document.documentElement.style.setProperty('--vh', `${h * 0.01}px`);
-      } catch (e) {}
-
-      host.style.position = 'fixed';
-      host.style.left = '0';
-      host.style.top = '0';
-      host.style.right = '0';
-      host.style.bottom = '0';
-      host.style.width = `${w}px`;
-      host.style.height = 'calc(var(--vh) * 100)';
-      host.style.zIndex = '2147483647';
-
-      // Prevent page scrolling while maximized
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
-
-      // Trigger Phaser resize
-      try {
-        // @ts-ignore
-        if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w, h);
-      } catch (e) {}
-    } else {
-      // Revert styles
-      host.style.position = '';
-      host.style.left = '';
-      host.style.top = '';
-      host.style.right = '';
-      host.style.bottom = '';
-      host.style.width = '';
-      host.style.height = '';
-      host.style.zIndex = '';
-
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-
-      // Recalculate using window sizes
-      const w2 = window.innerWidth;
-      const h2 = window.innerHeight;
-      try {
-        // @ts-ignore
-        if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w2, h2);
-      } catch (e) {}
-    }
-  }
-
   init() {
     // Loading screen
     const { width, height } = this.scale;
@@ -269,7 +158,7 @@ export class FlappyScene extends Phaser.Scene {
       // Vytvořit animaci pro raketový pohon z sprite sheetu
       this.anims.create({
         key: 'thrust',
-        frames: this.anims.generateFrameNumbers('bird_thrust'), // všechny framy
+        frames: this.anims.generateFrameNumbers('bird_thrust', { start: 0, end: -1 }), // všechny framy
         frameRate: 15,
         repeat: -1, // Opakovat dokola
       });
@@ -376,16 +265,6 @@ export class FlappyScene extends Phaser.Scene {
     this.physics.add.overlap(this.bird, this.pipes, () => this.gameOver());
 
     // Menu se zobrazí až po fullscreen dialogu
-
-    // Reagovat na změnu velikosti (např. při změně adresního řádku nebo fullscreen)
-    this.scale.on('resize', (gameSize: any, baseSize: any) => {
-      const w = gameSize?.width ?? this.scale.width;
-      const h = gameSize?.height ?? this.scale.height;
-      this.handleResize(w, h);
-    });
-
-    // Inicialní sizing
-    this.handleResize(width, height);
   }
 
   update() {
@@ -445,9 +324,6 @@ export class FlappyScene extends Phaser.Scene {
   }
 
   private handleInput() {
-    // If the name input is open, ignore global input (prevents space restarting game)
-    if (this.nameInputContainer) return;
-
     if (this.gameState === 'menu') {
       // Menu clicks are handled by button events
       return;
@@ -598,8 +474,9 @@ export class FlappyScene extends Phaser.Scene {
 
       // Zjistit jestli je hráč v top 10
       const topScores = globalScores.slice(0, 10);
-      const minScoreInTop = topScores.length > 0 ? topScores[topScores.length - 1].score : -Infinity;
-      this.isTop10 = topScores.length < 10 || this.score >= minScoreInTop;
+      // Pokud je leaderboard prázdný nebo má méně než 10 položek, hráč je automaticky v top 10
+      // Nebo pokud má vyšší skóre než nejhorší v top 10
+      this.isTop10 = topScores.length < 10 || topScores.some((s: { score: number }) => s.score <= this.score);
 
       if (this.isTop10) {
         // Hráč je v top 10 - zobrazit NEW HIGH SCORE a input field
@@ -710,15 +587,10 @@ export class FlappyScene extends Phaser.Scene {
     this.mobileInputElement = document.createElement('input');
     this.mobileInputElement.type = 'text';
     this.mobileInputElement.maxLength = 8;
-    // Place input centrally but invisible so mobile keyboards open reliably
     this.mobileInputElement.style.position = 'fixed';
-    this.mobileInputElement.style.left = '50%';
-    this.mobileInputElement.style.top = '50%';
-    this.mobileInputElement.style.transform = 'translate(-50%, -50%)';
     this.mobileInputElement.style.opacity = '0';
-    this.mobileInputElement.style.width = '1px';
-    this.mobileInputElement.style.height = '1px';
-    this.mobileInputElement.style.pointerEvents = 'auto';
+    this.mobileInputElement.style.pointerEvents = 'none';
+    this.mobileInputElement.style.left = '-9999px';
     this.mobileInputElement.autocomplete = 'off';
     this.mobileInputElement.autocapitalize = 'off';
     this.mobileInputElement.spellcheck = false;
@@ -827,29 +699,9 @@ export class FlappyScene extends Phaser.Scene {
       this.input.keyboard?.off('keydown', this.handleNameInput, this);
       this.cleanupMobileInput();
 
-      // Pokusit se načíst aktualizovaný leaderboard a zobrazit top10
-      try {
-        const res = await fetch('/.netlify/functions/leaderboard');
-        const globalScores = await res.json();
-        const topScores = Array.isArray(globalScores) ? globalScores.slice(0, 10) : [];
-
-        let leaderboardStr = 'Score submitted!\n\n--- TOP 10 ---\n';
-        topScores.forEach((item: { score: number; name: string }, index: number) => {
-          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
-          leaderboardStr += `${medal} ${index + 1}. ${item.name || 'Anonymous'} - ${item.score}\n`;
-        });
-
-        this.leaderboardText.setText(leaderboardStr + '\nClick to Restart');
-        this.leaderboardText.setY(this.scale.height / 2);
-        this.leaderboardText.setVisible(true);
-      } catch (err) {
-        this.leaderboardText.setText('Score submitted!\n\nClick to Restart');
-        this.leaderboardText.setY(this.scale.height / 2);
-        this.leaderboardText.setVisible(true);
-      }
-
-      // Reset submit flag (safe to allow future submissions in new games)
-      this.isSubmittingScore = false;
+      // Zobrazit potvrzení a aktualizovaný žebříček
+      this.leaderboardText.setText('Score submitted!\n\nClick to Restart');
+      this.leaderboardText.setY(this.scale.height / 2);
     } catch (error) {
       console.error('Failed to submit score:', error);
       // Reset flag při chybě, aby uživatel mohl zkusit znovu
@@ -1409,78 +1261,17 @@ export class FlappyScene extends Phaser.Scene {
     // YES button handlers
     yesBg.on('pointerover', () => yesBg.setFillStyle(0x00cc00));
     yesBg.on('pointerout', () => yesBg.setFillStyle(0x00aa00));
-    yesBg.on('pointerdown', async () => {
-      // If mobile, prefer expanding the game container within the page instead of using Fullscreen API
-      if (this.isMobileDevice()) {
-        await this.toggleMaximizeWithinPage();
-        // Close dialog and show menu
-        overlay.destroy();
-        dialogContainer.destroy();
-        this.showMenu();
-        return;
+    yesBg.on('pointerdown', () => {
+      // Enter fullscreen
+      if (this.scale.isFullscreen) {
+        this.scale.stopFullscreen();
+      } else {
+        this.scale.startFullscreen();
       }
-      // Robust fullscreen entry: try Phaser API, then fallbacks to canvas/document
-      try {
-        if (this.scale.isFullscreen) {
-          await this.scale.stopFullscreen();
-        } else {
-          // Phaser's startFullscreen may return a Promise
-          try {
-            // some Phaser builds return a Promise, await it when available
-            // @ts-ignore
-            const r = this.scale.startFullscreen();
-            if (r && typeof r.then === 'function') await r;
-          } catch (e) {
-            // fallback below
-            throw e;
-          }
-        }
-      } catch (err) {
-        // Phaser fullscreen failed — try host element, canvas, then document with vendor fallbacks
-        try {
-          const host = document.getElementById('phaser-host');
-          const canvas = (this.game.canvas as any) || document.querySelector('canvas');
-
-          const tryRequest = async (el: any) => {
-            if (!el) return false;
-            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-            if (req) {
-              // @ts-ignore
-              await req.call(el);
-              return true;
-            }
-            return false;
-          };
-
-          let ok = false;
-          // Prefer requesting fullscreen on the host container so CSS :fullscreen rules apply
-          ok = await tryRequest(host) || ok;
-          // then try canvas
-          if (!ok) ok = await tryRequest(canvas) || ok;
-          // final fallback: documentElement
-          if (!ok) ok = await tryRequest(document.documentElement) || ok;
-          if (!ok) console.warn('No fullscreen API available on this browser');
-        } catch (err2) {
-          console.warn('Fullscreen request failed', err2);
-        }
-      }
-
-      // After attempting fullscreen, schedule a resize so Phaser recalculates scale
-      setTimeout(() => {
-        try {
-          const vv: any = (window as any).visualViewport;
-          const w = vv && vv.width ? Math.round(vv.width) : window.innerWidth;
-          const h = vv && vv.height ? Math.round(vv.height) : window.innerHeight;
-          // @ts-ignore
-          if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w, h);
-        } catch (e) {
-          // ignore
-        }
-      }, 50);
-
-      // Close dialog and show menu
+      // Close dialog
       overlay.destroy();
       dialogContainer.destroy();
+      // Show menu
       this.showMenu();
     });
 

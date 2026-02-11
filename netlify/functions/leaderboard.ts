@@ -24,8 +24,7 @@ function createStore() {
   });
 
   if (!token) {
-    console.warn('NETLIFY_AUTH_TOKEN not set — Blobs unavailable. Falling back to in-memory/no-op for GET.');
-    return null as unknown as ReturnType<typeof getStore> | null;
+    throw new Error('NETLIFY_AUTH_TOKEN environment variable is not set');
   }
 
   return getStore({
@@ -55,18 +54,6 @@ function checkRateLimit(ip: string): boolean {
 
   record.count++;
   return true;
-}
-
-function extractIp(headers: Record<string, string | undefined>, event?: any): string {
-  // Robust extraction: prefer x-forwarded-for, handle casing and comma-separated lists
-  const key = Object.keys(headers).find(k => k.toLowerCase() === 'x-forwarded-for');
-  const headerVal = key ? headers[key] : headers['x-forwarded-for'] || headers['X-Forwarded-For'] || headers['client-ip'] || headers['Client-Ip'];
-  if (typeof headerVal === 'string' && headerVal.length) {
-    return headerVal.split(',')[0].trim();
-  }
-  // Try platform-specific places
-  if (event && (event.requestContext?.identity?.sourceIp)) return event.requestContext.identity.sourceIp;
-  return 'unknown';
 }
 
 function validateName(name: string): boolean {
@@ -115,14 +102,6 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === 'GET') {
     try {
       console.log('Fetching scores from Blobs...');
-      if (!store) {
-        console.warn('Blobs store not configured — returning empty leaderboard');
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify([]),
-        };
-      }
       const scoresData = await store.get(BLOB_KEY, { type: 'json' }) as Score[] | null;
       console.log('Scores fetched:', scoresData ? `${scoresData.length} entries` : 'no data');
       const scores = scoresData || [];
@@ -154,7 +133,7 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === 'POST') {
     try {
       // Rate limiting
-      const ip = extractIp(event.headers || {}, event);
+      const ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown';
       if (!checkRateLimit(ip)) {
         return {
           statusCode: 429,
@@ -180,15 +159,6 @@ export const handler: Handler = async (event) => {
           statusCode: 400,
           headers,
           body: JSON.stringify({ error: 'Invalid name. Max 8 characters, alphanumeric only.' }),
-        };
-      }
-
-      // If blobs store not configured, reject POST (service unavailable)
-      if (!store) {
-        return {
-          statusCode: 503,
-          headers,
-          body: JSON.stringify({ error: 'Leaderboard storage not configured' }),
         };
       }
 
