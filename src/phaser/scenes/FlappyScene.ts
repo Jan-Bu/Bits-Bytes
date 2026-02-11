@@ -1288,17 +1288,55 @@ export class FlappyScene extends Phaser.Scene {
     // YES button handlers
     yesBg.on('pointerover', () => yesBg.setFillStyle(0x00cc00));
     yesBg.on('pointerout', () => yesBg.setFillStyle(0x00aa00));
-    yesBg.on('pointerdown', () => {
-      // Enter fullscreen
-      if (this.scale.isFullscreen) {
-        this.scale.stopFullscreen();
-      } else {
-        this.scale.startFullscreen();
+    yesBg.on('pointerdown', async () => {
+      // Robust fullscreen entry: try Phaser API, then fallbacks to canvas/document
+      try {
+        if (this.scale.isFullscreen) {
+          await this.scale.stopFullscreen();
+        } else {
+          // Phaser's startFullscreen may return a Promise
+          try {
+            // some Phaser builds return a Promise, await it when available
+            // @ts-ignore
+            const r = this.scale.startFullscreen();
+            if (r && typeof r.then === 'function') await r;
+          } catch (e) {
+            // fallback below
+            throw e;
+          }
+        }
+      } catch (err) {
+        // Phaser fullscreen failed — try direct element requestFullscreen on canvas
+        try {
+          const canvas = (this.game.canvas as any) || document.querySelector('canvas');
+          if (canvas && canvas.requestFullscreen) {
+            // @ts-ignore
+            await canvas.requestFullscreen();
+          } else if (document.documentElement.requestFullscreen) {
+            // final fallback
+            // @ts-ignore
+            await document.documentElement.requestFullscreen();
+          }
+        } catch (err2) {
+          // ignore — some browsers block fullscreen or require different UX
+          console.warn('Fullscreen request failed', err2);
+        }
       }
-      // Close dialog
+
+      // After attempting fullscreen, trigger a resize so Phaser recalculates scale
+      try {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        // Resize ScaleManager
+        // @ts-ignore
+        if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w, h);
+      } catch (e) {
+        // ignore
+      }
+
+      // Close dialog and show menu
       overlay.destroy();
       dialogContainer.destroy();
-      // Show menu
       this.showMenu();
     });
 

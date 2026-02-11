@@ -65,6 +65,43 @@ export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
     };
   }, []); // <- žádné závislosti!
 
+  // Reactively keep host height in sync with visualViewport on mobile
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el) return;
+
+    const setSizeFromViewport = () => {
+      // Prefer visualViewport for accurate mobile viewport (address bar)
+      const vv: any = (window as any).visualViewport;
+      if (vv && vv.width && vv.height) {
+        el.style.width = `${Math.round(vv.width)}px`;
+        el.style.height = `${Math.round(vv.height)}px`;
+      } else {
+        el.style.width = '100vw';
+        // fallback to innerHeight for older browsers
+        el.style.height = `${window.innerHeight}px`;
+      }
+    };
+
+    setSizeFromViewport();
+    window.addEventListener('resize', setSizeFromViewport);
+    window.addEventListener('orientationchange', setSizeFromViewport);
+    // visualViewport events
+    if ((window as any).visualViewport) {
+      (window as any).visualViewport.addEventListener('resize', setSizeFromViewport);
+      (window as any).visualViewport.addEventListener('scroll', setSizeFromViewport);
+    }
+
+    return () => {
+      window.removeEventListener('resize', setSizeFromViewport);
+      window.removeEventListener('orientationchange', setSizeFromViewport);
+      if ((window as any).visualViewport) {
+        (window as any).visualViewport.removeEventListener('resize', setSizeFromViewport);
+        (window as any).visualViewport.removeEventListener('scroll', setSizeFromViewport);
+      }
+    };
+  }, []);
+
   return (
     <div
       ref={hostRef}
@@ -75,6 +112,8 @@ export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
         height: '100dvh',
         background: '#000',
         overscrollBehavior: 'none',
+        display: 'block',
+        touchAction: 'manipulation',
       }}
     />
   );
