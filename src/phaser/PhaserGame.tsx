@@ -71,24 +71,30 @@ export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
 
     const setSizeFromViewport = () => {
       const vv: any = (window as any).visualViewport;
-      let w: number | string = '100vw';
-      let h: number | string = '100vh';
+      let w: number = window.innerWidth;
+      let h: number = window.innerHeight;
       if (vv && vv.width && vv.height) {
         w = Math.round(vv.width);
         h = Math.round(vv.height);
-        el.style.width = `${w}px`;
-        el.style.height = `${h}px`;
-      } else {
-        el.style.width = '100vw';
-        el.style.height = `${window.innerHeight}px`;
       }
+
+      // update CSS var --vh so we can use calc(var(--vh) * 100) in CSS
+      try {
+        document.documentElement.style.setProperty('--vh', `${h * 0.01}px`);
+      } catch (e) {
+        // ignore
+      }
+
+      // Ensure host uses the computed --vh
+      el.style.width = `${w}px`;
+      el.style.height = 'calc(var(--vh) * 100)';
 
       // Also notify Phaser scale manager so it can recalc sizes
       try {
         const game = gameRef.current;
         if (game && game.scale && typeof game.scale.resize === 'function') {
-          const rw = typeof w === 'number' ? w : window.innerWidth;
-          const rh = typeof h === 'number' ? h : window.innerHeight;
+          const rw = w;
+          const rh = h;
           // @ts-ignore
           game.scale.resize(rw, rh);
         }

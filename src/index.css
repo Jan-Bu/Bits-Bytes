@@ -47,6 +47,26 @@ canvas:-webkit-full-screen {
   background: #000 !important;
 }
 
+/* Use --vh CSS var (set from JS) so host can match visualViewport on mobile */
+#phaser-host {
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+/* Maximized-in-page state for mobile 'fullscreen' fallback */
+#phaser-host.bb-expanded {
+  position: fixed;
+  inset: 0;
+  width: 100vw !important;
+  height: calc(var(--vh, 1vh) * 100) !important;
+  z-index: 2147483647 !important;
+  background: #000 !important;
+}
+
+#phaser-host.bb-expanded canvas {
+  width: 100vw !important;
+  height: calc(var(--vh, 1vh) * 100) !important;
+}
+
 @layer utilities {
   .bb-caret {
     /* jen Tailwind, co jde */

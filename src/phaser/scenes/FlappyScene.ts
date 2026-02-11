@@ -111,6 +111,75 @@ export class FlappyScene extends Phaser.Scene {
     if (this.nameInputContainer) this.nameInputContainer.setPosition(width / 2, height / 2 + 80);
   }
 
+  // Detect common mobile user agents
+  private isMobileDevice(): boolean {
+    try {
+      return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Instead of invoking the Fullscreen API on mobile (which Safari often blocks/doesn't behave as expected),
+  // expand the host container to occupy the largest available viewport area inside the page.
+  private async toggleMaximizeWithinPage(): Promise<void> {
+    const host = document.getElementById('phaser-host');
+    if (!host) return;
+
+    const expanded = host.classList.toggle('bb-expanded');
+
+    if (expanded) {
+      const vv: any = (window as any).visualViewport;
+      const w = vv && vv.width ? Math.round(vv.width) : window.innerWidth;
+      const h = vv && vv.height ? Math.round(vv.height) : window.innerHeight;
+
+      // update CSS var for vh based sizing
+      try {
+        document.documentElement.style.setProperty('--vh', `${h * 0.01}px`);
+      } catch (e) {}
+
+      host.style.position = 'fixed';
+      host.style.left = '0';
+      host.style.top = '0';
+      host.style.right = '0';
+      host.style.bottom = '0';
+      host.style.width = `${w}px`;
+      host.style.height = 'calc(var(--vh) * 100)';
+      host.style.zIndex = '2147483647';
+
+      // Prevent page scrolling while maximized
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+
+      // Trigger Phaser resize
+      try {
+        // @ts-ignore
+        if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w, h);
+      } catch (e) {}
+    } else {
+      // Revert styles
+      host.style.position = '';
+      host.style.left = '';
+      host.style.top = '';
+      host.style.right = '';
+      host.style.bottom = '';
+      host.style.width = '';
+      host.style.height = '';
+      host.style.zIndex = '';
+
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+
+      // Recalculate using window sizes
+      const w2 = window.innerWidth;
+      const h2 = window.innerHeight;
+      try {
+        // @ts-ignore
+        if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w2, h2);
+      } catch (e) {}
+    }
+  }
+
   init() {
     // Loading screen
     const { width, height } = this.scale;
@@ -1341,6 +1410,15 @@ export class FlappyScene extends Phaser.Scene {
     yesBg.on('pointerover', () => yesBg.setFillStyle(0x00cc00));
     yesBg.on('pointerout', () => yesBg.setFillStyle(0x00aa00));
     yesBg.on('pointerdown', async () => {
+      // If mobile, prefer expanding the game container within the page instead of using Fullscreen API
+      if (this.isMobileDevice()) {
+        await this.toggleMaximizeWithinPage();
+        // Close dialog and show menu
+        overlay.destroy();
+        dialogContainer.destroy();
+        this.showMenu();
+        return;
+      }
       // Robust fullscreen entry: try Phaser API, then fallbacks to canvas/document
       try {
         if (this.scale.isFullscreen) {
