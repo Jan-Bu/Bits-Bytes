@@ -1358,33 +1358,47 @@ export class FlappyScene extends Phaser.Scene {
           }
         }
       } catch (err) {
-        // Phaser fullscreen failed — try direct element requestFullscreen on canvas
+        // Phaser fullscreen failed — try host element, canvas, then document with vendor fallbacks
         try {
+          const host = document.getElementById('phaser-host');
           const canvas = (this.game.canvas as any) || document.querySelector('canvas');
-          if (canvas && canvas.requestFullscreen) {
-            // @ts-ignore
-            await canvas.requestFullscreen();
-          } else if (document.documentElement.requestFullscreen) {
-            // final fallback
-            // @ts-ignore
-            await document.documentElement.requestFullscreen();
-          }
+
+          const tryRequest = async (el: any) => {
+            if (!el) return false;
+            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+            if (req) {
+              // @ts-ignore
+              await req.call(el);
+              return true;
+            }
+            return false;
+          };
+
+          let ok = false;
+          // Prefer requesting fullscreen on the host container so CSS :fullscreen rules apply
+          ok = await tryRequest(host) || ok;
+          // then try canvas
+          if (!ok) ok = await tryRequest(canvas) || ok;
+          // final fallback: documentElement
+          if (!ok) ok = await tryRequest(document.documentElement) || ok;
+          if (!ok) console.warn('No fullscreen API available on this browser');
         } catch (err2) {
-          // ignore — some browsers block fullscreen or require different UX
           console.warn('Fullscreen request failed', err2);
         }
       }
 
-      // After attempting fullscreen, trigger a resize so Phaser recalculates scale
-      try {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        // Resize ScaleManager
-        // @ts-ignore
-        if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w, h);
-      } catch (e) {
-        // ignore
-      }
+      // After attempting fullscreen, schedule a resize so Phaser recalculates scale
+      setTimeout(() => {
+        try {
+          const vv: any = (window as any).visualViewport;
+          const w = vv && vv.width ? Math.round(vv.width) : window.innerWidth;
+          const h = vv && vv.height ? Math.round(vv.height) : window.innerHeight;
+          // @ts-ignore
+          if (this.scale && typeof this.scale.resize === 'function') this.scale.resize(w, h);
+        } catch (e) {
+          // ignore
+        }
+      }, 50);
 
       // Close dialog and show menu
       overlay.destroy();

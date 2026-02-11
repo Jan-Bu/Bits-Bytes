@@ -115,8 +115,9 @@ export const PhaserGame: React.FC<Props> = ({ navigate, getLang, setLang }) => {
     };
   }, []);
 
-  return (
+    return (
     <div
+      id="phaser-host"
       ref={hostRef}
       style={{
         position: 'fixed',

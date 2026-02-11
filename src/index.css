@@ -26,6 +26,27 @@ canvas {
   display: block;
 }
 
+/* Fullscreen rules for host and canvas to ensure the game fills the screen */
+#phaser-host:fullscreen,
+#phaser-host:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+#phaser-host:fullscreen canvas,
+#phaser-host:-webkit-full-screen canvas,
+canvas:fullscreen,
+canvas:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  display: block;
+}
+
+/* Make sure body/background don't show through when element is fullscreen */
+:fullscreen {
+  background: #000 !important;
+}
+
 @layer utilities {
   .bb-caret {
     /* jen Tailwind, co jde */
