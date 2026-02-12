@@ -24,6 +24,7 @@ export class FlappyScene extends Phaser.Scene {
   private isTop10 = false;
   private isSubmittingScore = false; // Flag pro prevenci dvojitého odeslání
   private birdSprite?: Phaser.GameObjects.Sprite; // Reference pro sprite s animací
+  private flameSprite?: Phaser.GameObjects.Sprite; // Trysky (bez kolize)
   private background!: Phaser.GameObjects.TileSprite; // Pozadí pro scrollování
 
   // Menu UI
@@ -109,12 +110,17 @@ export class FlappyScene extends Phaser.Scene {
     this.load.image('background', '/bg_flappy.png');
 
     // Načtení static obrázku ptáčka (bez pohonu)
-    this.load.image('bird_idle', '/bits_static_flappy.png');
+    // this.load.image('bird_idle', '/bits_static_flappy.png');
+    this.load.image('bird_idle', '/bits_test.png');
 
     // Načtení sprite sheetu pro raketový pohon (6 framů, každý 400×208px)
-    this.load.spritesheet('bird_thrust', '/bits_sprite_flappy.png', {
-      frameWidth: 400,
-      frameHeight: 208,
+    // this.load.spritesheet('bird_thrust', '/bits_sprite_flappy.png', {
+    //   frameWidth: 400,
+    //   frameHeight: 208,
+    // });
+    this.load.spritesheet('bird_flame', '/bits_sprite_flame.png', {
+      frameWidth: 104,
+      frameHeight: 58,
     });
 
     // Načtení zvuků
@@ -143,27 +149,32 @@ export class FlappyScene extends Phaser.Scene {
     this.background.setTileScale(1, height / 512); // Roztáhnout na celou výšku (512px je velikost textury)
 
     // Ptáček - použít sprite pokud je načtený, jinak placeholder
-    if (this.textures.exists('bird_idle') && this.textures.exists('bird_thrust')) {
-      // Použít sprite z thrust sprite sheetu
-      this.bird = this.physics.add.sprite(100, height / 2, 'bird_thrust', 0);
+    if (this.textures.exists('bird_idle')) {
+      // Použít testovací sprite (bez animace)
+      this.bird = this.physics.add.sprite(100, height / 2, 'bird_idle', 0);
       this.birdSprite = this.bird as Phaser.GameObjects.Sprite;
 
-      // Zmenšit na polovinu (400×208px → 200×104px)
-      this.birdSprite.setScale(0.5);
-
-      // Na začátku nastavit idle texturu
+      // Test sprite 104×58px, škálovat tak, aby výška byla ~104px (podobně jako předtím)
+      // 75% velikost (104×58 -> 78×43.5)
+      this.birdSprite.setScale(0.75);
+      this.birdSprite.setOrigin(0.5, 0.5);
       this.birdSprite.setTexture('bird_idle');
 
-      // Vytvořit animaci pro raketový pohon z sprite sheetu
-      this.anims.create({
-        key: 'thrust',
-        frames: this.anims.generateFrameNumbers('bird_thrust', { start: 0, end: -1 }), // všechny framy
-        frameRate: 15,
-        repeat: -1, // Opakovat dokola
-      });
+      // Trysky jako samostatný sprite (bez kolize)
+      this.flameSprite = this.add.sprite(100, height / 2, 'bird_flame', 0);
+      this.flameSprite.setScale(0.9);
+      this.flameSprite.setOrigin(0.5, 0.5);
+      this.flameSprite.setDepth(150);
+      this.flameSprite.setVisible(false);
 
-      // Pro idle použít bird_idle texturu (přepneme texturu místo animace)
-      // Idle se nastaví později přepnutím textury
+      if (!this.anims.exists('flame')) {
+        this.anims.create({
+          key: 'flame',
+          frames: this.anims.generateFrameNumbers('bird_flame', { start: 0, end: 3 }),
+          frameRate: 12,
+          repeat: -1,
+        });
+      }
     } else {
       // Fallback - žlutý čtverec jako placeholder
       this.bird = this.add.rectangle(100, height / 2, 40, 40, 0xFFFF00);
@@ -175,13 +186,12 @@ export class FlappyScene extends Phaser.Scene {
     birdBody.setCollideWorldBounds(true);
     birdBody.setAllowGravity(false); // Vypnout gravitaci na začátku (zapne se až při startu hry)
 
-    // Nastavit přesnou collision box jen na viditelnou část panáčka
-    // Kresleno ve 100×52px: panáček nahoře, pod tělem 18px prázdných → tělo 34px vysoké
-    // Exportováno jako 400×208px: pod tělem 72px prázdných → tělo 136px vysoké
-    // Po scale 0.5 (200×104px): tělo od vrchu, výška 68px
+    // Kolize přesně na viditelnou velikost sprite (bez prázdných okrajů)
     if (this.birdSprite) {
-      birdBody.setSize(40, 68); // Přesná velikost těla (šířka 40px, výška 68px)
-      birdBody.setOffset(80, 0);  // Offset: (200-40)/2 horizontálně, 0px od vrchu (tělo je nahoře)
+      const bw = Math.round(this.birdSprite.displayWidth);
+      const bh = Math.round(this.birdSprite.displayHeight);
+      birdBody.setSize(bw, bh);
+      birdBody.setOffset(0, 0);
     }
 
     // Skupina pro pipes
@@ -279,11 +289,20 @@ export class FlappyScene extends Phaser.Scene {
 
     // Kontrola animace raketového pohonu
     // Pokud ptáček klesá (není ve vzestupném pohybu), přepnout na idle
-    if (this.birdSprite && birdBody.velocity.y > 0) {
-      if (this.birdSprite.anims.currentAnim?.key === 'thrust') {
-        // Zastavit thrust animaci, přepnout na idle texturu
-        this.birdSprite.anims.stop();
-        this.birdSprite.setTexture('bird_idle');
+    // Trysky pozice/viditelnost
+    if (this.flameSprite && this.bird) {
+      const dy = this.bird.displayHeight * 1.1;
+      const dx = this.bird.displayWidth * 0.12;
+      this.flameSprite.setPosition(this.bird.x + dx, this.bird.y + dy);
+      const shouldShow =
+        this.gameState === 'playing' &&
+        this.bird.body &&
+        (this.bird.body as Phaser.Physics.Arcade.Body).velocity.y < 0;
+      this.flameSprite.setVisible(shouldShow);
+      if (shouldShow) {
+        this.flameSprite.play('flame', true);
+      } else if (this.flameSprite.anims.isPlaying) {
+        this.flameSprite.anims.stop();
       }
     }
 
@@ -364,12 +383,7 @@ export class FlappyScene extends Phaser.Scene {
     const birdBody = this.bird.body as Phaser.Physics.Arcade.Body;
     birdBody.setVelocityY(this.JUMP_VELOCITY);
 
-    // Spustit animaci raketového pohonu při skoku
-    if (this.birdSprite) {
-      // Zastavit idle, spustit thrust animaci
-      this.birdSprite.anims.stop();
-      this.birdSprite.play('thrust', true);
-    }
+    // Bez animace
 
     // Přehrát zvuk skoku
     this.sound.play('jump', { volume: 0.08 });
@@ -400,8 +414,12 @@ export class FlappyScene extends Phaser.Scene {
     topPipe.setVelocityX(-this.currentPipeSpeed);
     topPipe.scored = false; // inicializace scoring flagu
     if (topPipe.body) {
-      (topPipe.body as Phaser.Physics.Arcade.Body).setImmovable(true);
-      (topPipe.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+      const body = topPipe.body as Phaser.Physics.Arcade.Body;
+      body.setImmovable(true);
+      body.setAllowGravity(false);
+      // Přesná kolize podle zobrazené velikosti
+      body.setSize(topPipe.displayWidth, topPipe.displayHeight);
+      body.setOffset(0, 0);
     }
 
     // Spodní pipe (normálně) - bez scoring flagu, pouze horní pipe počítá body
@@ -409,8 +427,13 @@ export class FlappyScene extends Phaser.Scene {
     bottomPipe.setOrigin(0.5, 0); // origin nahoře uprostřed
     bottomPipe.setVelocityX(-this.currentPipeSpeed);
     if (bottomPipe.body) {
-      (bottomPipe.body as Phaser.Physics.Arcade.Body).setImmovable(true);
-      (bottomPipe.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+      const body = bottomPipe.body as Phaser.Physics.Arcade.Body;
+      body.setImmovable(true);
+      body.setAllowGravity(false);
+      // Přesná kolize podle zobrazené velikosti + vnější margin
+      const pad = 12;
+      body.setSize(bottomPipe.displayWidth + pad * 2, bottomPipe.displayHeight + pad * 2);
+      body.setOffset(-pad, -pad);
     }
   }
 
@@ -418,6 +441,10 @@ export class FlappyScene extends Phaser.Scene {
     if (this.gameState === 'gameover') return;
 
     this.gameState = 'gameover';
+    if (this.flameSprite) {
+      this.flameSprite.setVisible(false);
+      this.flameSprite.anims.stop();
+    }
 
     // Zastavit timer
     this.pipeTimer?.destroy();

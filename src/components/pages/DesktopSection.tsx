@@ -45,7 +45,7 @@ const iconMeta: Record<IconAppId, { src: string }> = {
   contact: { src: '/icons/contact_icon.png' },
   terms: { src: '/icons/text_icon.png' },
   gdpr: { src: '/icons/text_icon.png' },
-  flappy: { src: '/icons/flappy_icon.png' },
+  flappy: { src: '/icons/flappy_bits_new_icon.png' },
 };
 
 const DesktopIcon: React.FC<{
