@@ -67,9 +67,15 @@ const DesktopIcon: React.FC<{
   ICON_SIZE, DESKTOP_MARGIN, TASKBAR_HEIGHT, snapX, snapY,
   blockedRects = [], occupiedRects = [], GRID,
 }) => {
-    const local = useRef<{ dx: number; dy: number; dragging: boolean; startedAt?: { x: number; y: number } }>({
-      dx: 0, dy: 0, dragging: false,
-    });
+  const local = useRef<{
+    dx: number;
+    dy: number;
+    dragging: boolean;
+    startedAt?: { x: number; y: number };
+    last?: { x: number; y: number };
+  }>({
+    dx: 0, dy: 0, dragging: false,
+  });
     const raf = useRef<number | null>(null);
 
     const clampToDesktop = (nx: number, ny: number) => {
@@ -84,12 +90,13 @@ const DesktopIcon: React.FC<{
       };
     };
 
-    const onPointerDown = (e: React.PointerEvent) => {
-      e.preventDefault();
-      const target = e.currentTarget as HTMLDivElement;
-      if (e.isPrimary) target.setPointerCapture(e.pointerId);
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const target = e.currentTarget as HTMLDivElement;
+    if (e.isPrimary) target.setPointerCapture(e.pointerId);
 
-      local.current.dragging = true;
+    local.current.dragging = true;
+    local.current.last = { x: e.clientX, y: e.clientY };
 
       const rect = desktopRef.current?.getBoundingClientRect();
       const desktopLeft = rect?.left ?? 0;
@@ -99,9 +106,10 @@ const DesktopIcon: React.FC<{
       local.current.startedAt = { x: e.clientX, y: e.clientY };
     };
 
-    const onPointerMove = (e: React.PointerEvent) => {
-      if (!local.current.dragging) return;
-      e.preventDefault();
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!local.current.dragging) return;
+    e.preventDefault();
+    local.current.last = { x: e.clientX, y: e.clientY };
 
       if (raf.current) cancelAnimationFrame(raf.current);
       raf.current = requestAnimationFrame(() => {
@@ -126,18 +134,21 @@ const DesktopIcon: React.FC<{
 
     const iconRectAt = (xx: number, yy: number) => ({ x: xx, y: yy, w: ICON_SIZE, h: ICON_SIZE + 40 }); // +40px pro label místo +30px
 
-    const finishDrag = (e: React.PointerEvent) => {
+  const finishDrag = (e: React.PointerEvent | null) => {
+    if (e) {
       const target = e.currentTarget as HTMLDivElement;
       try { target.releasePointerCapture(e.pointerId); } catch { }
-      if (!local.current.dragging) return;
-      local.current.dragging = false;
+    }
+    if (!local.current.dragging) return;
+    local.current.dragging = false;
 
-      const rect = desktopRef.current?.getBoundingClientRect();
-      const desktopLeft = rect?.left ?? 0;
-      const desktopTop = rect?.top ?? 0;
+    const rect = desktopRef.current?.getBoundingClientRect();
+    const desktopLeft = rect?.left ?? 0;
+    const desktopTop = rect?.top ?? 0;
 
-      const nxRaw = e.clientX - desktopLeft - local.current.dx;
-      const nyRaw = e.clientY - desktopTop - local.current.dy;
+    const src = e ? { x: e.clientX, y: e.clientY } : (local.current.last ?? { x: desktopLeft, y: desktopTop });
+    const nxRaw = src.x - desktopLeft - local.current.dx;
+    const nyRaw = src.y - desktopTop - local.current.dy;
 
       // první clamp + snap
       const { nx, ny } = clampToDesktop(nxRaw, nyRaw);
@@ -202,18 +213,16 @@ const DesktopIcon: React.FC<{
       onMove(id, sx, sy);
     };
 
-    const onPointerUp = (e: React.PointerEvent) => {
-      e.preventDefault();
-      finishDrag(e);
-    };
+  const onPointerUp = (e: React.PointerEvent) => {
+    e.preventDefault();
+    finishDrag(e);
+  };
 
-    const onPointerCancel = (e: React.PointerEvent) => {
-      if (!local.current.dragging) return;
-      e.preventDefault();
-      const target = e.currentTarget as HTMLDivElement;
-      try { target.releasePointerCapture(e.pointerId); } catch { }
-      local.current.dragging = false;
-    };
+  const onPointerCancel = (e: React.PointerEvent) => {
+    if (!local.current.dragging) return;
+    e.preventDefault();
+    finishDrag(null);
+  };
 
     return (
       <div
@@ -523,10 +532,17 @@ const DesktopSection: React.FC = () => {
     const intersects = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
       !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
 
-    // grid-based placement: compute columns/rows and allocate cells uniquely
-    const cellRect = (col: number, row: number) => ({ x: DESKTOP_MARGIN + col * GRID, y: DESKTOP_MARGIN + row * GRID, w: ICON_SIZE, h: ICON_SIZE + 40 });
+    const mobileColXs = bp === 'mobile' && fourColXs ? fourColXs : null;
 
-    const cols = Math.max(1, Math.floor((maxX - DESKTOP_MARGIN) / GRID) + 1);
+    // grid-based placement: compute columns/rows and allocate cells uniquely
+    const cellRect = (col: number, row: number) => ({
+      x: mobileColXs ? mobileColXs[col] : DESKTOP_MARGIN + col * GRID,
+      y: DESKTOP_MARGIN + row * GRID,
+      w: ICON_SIZE,
+      h: ICON_SIZE + 40,
+    });
+
+    const cols = mobileColXs ? mobileColXs.length : Math.max(1, Math.floor((maxX - DESKTOP_MARGIN) / GRID) + 1);
     const rows = Math.max(1, Math.floor((maxY - DESKTOP_MARGIN) / GRID) + 1);
 
     // snapshot aktuálních pozic — map to desired grid cells
@@ -534,7 +550,9 @@ const DesktopSection: React.FC = () => {
       .map(([id, p]) => {
         const sx = snapX(p.x);
         const sy = snapY(p.y);
-        const col = Math.round((sx - DESKTOP_MARGIN) / GRID);
+        const col = mobileColXs
+          ? mobileColXs.reduce((bestIdx, x, idx) => (Math.abs(sx - x) < Math.abs(sx - mobileColXs[bestIdx]) ? idx : bestIdx), 0)
+          : Math.round((sx - DESKTOP_MARGIN) / GRID);
         const row = Math.round((sy - DESKTOP_MARGIN) / GRID);
         return { id, col: Math.min(Math.max(0, col), cols - 1), row: Math.min(Math.max(0, row), rows - 1) };
       });

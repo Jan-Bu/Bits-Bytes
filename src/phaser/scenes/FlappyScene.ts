@@ -142,9 +142,6 @@ export class FlappyScene extends Phaser.Scene {
     this.background = this.add.tileSprite(width / 2, height / 2, width, height, 'background');
     this.background.setTileScale(1, height / 512); // Roztáhnout na celou výšku (512px je velikost textury)
 
-    // Show fullscreen dialog first
-    this.showFullscreenDialog();
-
     // Ptáček - použít sprite pokud je načtený, jinak placeholder
     if (this.textures.exists('bird_idle') && this.textures.exists('bird_thrust')) {
       // Použít sprite z thrust sprite sheetu
@@ -267,6 +264,7 @@ export class FlappyScene extends Phaser.Scene {
     this.physics.add.overlap(this.bird, this.pipes, () => this.gameOver());
 
     // Menu se zobrazí až po fullscreen dialogu
+    this.showFullscreenDialog();
   }
 
   update() {
