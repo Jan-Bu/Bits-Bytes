@@ -324,6 +324,9 @@ export class FlappyScene extends Phaser.Scene {
   }
 
   private handleInput() {
+    // Když je otevřený input pro jméno, neřešit globální klik/space
+    if (this.nameInputContainer) return;
+
     if (this.gameState === 'menu') {
       // Menu clicks are handled by button events
       return;
