@@ -79,18 +79,20 @@ export class FlappyScene extends Phaser.Scene {
       fontSize: this.getResponsiveFontSize(48),
       color: '#00ff00',
       fontFamily: this.getFontFamily(),
+      wordWrap: { width: Math.max(200, width - 40), useAdvancedWrap: true },
     }).setOrigin(0.5);
 
     const progressBar = this.add.rectangle(width / 2, height / 2 + 50, 0, 30, 0x00ff00);
     progressBar.setOrigin(0, 0.5);
 
-    const progressBox = this.add.rectangle(width / 2, height / 2 + 50, 400, 30);
+    const progressBarMaxWidth = Math.min(400, width - 40);
+    const progressBox = this.add.rectangle(width / 2, height / 2 + 50, progressBarMaxWidth, 30);
     progressBox.setStrokeStyle(3, 0x00ff00);
     progressBox.setFillStyle(0x000000, 0);
 
     this.load.on('progress', (value: number) => {
-      progressBar.width = 400 * value;
-      progressBar.x = (width / 2) - 200;
+      progressBar.width = progressBarMaxWidth * value;
+      progressBar.x = (width / 2) - (progressBarMaxWidth / 2);
     });
 
     this.load.on('complete', () => {
@@ -1209,6 +1211,16 @@ export class FlappyScene extends Phaser.Scene {
   }
 
   private showFullscreenDialog() {
+    const isMobileDevice =
+      /Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) || window.matchMedia('(pointer: coarse)').matches;
+
+    if (isMobileDevice) {
+      this.showMenu();
+      return;
+    }
+
     const { width, height } = this.scale;
 
     // Create overlay
