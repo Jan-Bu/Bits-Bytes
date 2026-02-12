@@ -43,7 +43,7 @@ export const translations: Translations = {
     clippy: {
       label: "Not Clippy",
       tips: {
-        0: "Double-click an icon to open a window.",
+        0: "Click on me for more tips!",
         1: "You can drag icons on the desktop.",
         2: "Click me again for another tip.",
       },
@@ -622,7 +622,7 @@ Every project deserves a bit of Bit’s precision and a byte of Byte’s creativ
     clippy: {
       label: "Not Clippy",
       tips: {
-        0: "Dvojklik na ikonu otevře okno.",
+        0: "Klikni na mě pro další tip!",
         1: "Ikony můžeš přetahovat po ploše.",
         2: "Klikni na mě znovu pro další tip.",
       },

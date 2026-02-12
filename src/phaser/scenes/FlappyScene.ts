@@ -198,6 +198,8 @@ export class FlappyScene extends Phaser.Scene {
     // Načíst high score z localStorage
     this.highScore = parseInt(localStorage.getItem('flappyBitsHighScore') || '0');
 
+    const isMobile = width < 640;
+
     // Score text
     this.scoreText = this.add.text(width / 2, 50, '0', {
       fontSize: this.getResponsiveFontSize(48),
@@ -247,7 +249,7 @@ export class FlappyScene extends Phaser.Scene {
 
     // Leaderboard text (zobrazí se při game over)
     this.leaderboardText = this.add.text(width / 2, height / 2 + 20, '', {
-      fontSize: this.getResponsiveFontSize(18),
+      fontSize: this.getResponsiveFontSize(isMobile ? 24 : 18),
       color: '#ffffff',
       fontFamily: this.getFontFamily(),
       stroke: '#000000',
@@ -970,6 +972,7 @@ export class FlappyScene extends Phaser.Scene {
 
   private async showLeaderboard() {
     const { width, height } = this.scale;
+    const isMobile = width < 640;
 
     this.gameState = 'leaderboard';
 
@@ -978,8 +981,8 @@ export class FlappyScene extends Phaser.Scene {
     this.leaderboardContainer.setDepth(100);
 
     // Title
-    const title = this.add.text(0, -200, 'GLOBAL LEADERBOARD', {
-      fontSize: this.getResponsiveFontSize(48),
+    const title = this.add.text(0, -230, 'GLOBAL LEADERBOARD', {
+      fontSize: this.getResponsiveFontSize(isMobile ? 44 : 48),
       color: '#ffff00',
       fontFamily: this.getFontFamily(),
       stroke: '#000000',
@@ -1023,8 +1026,8 @@ export class FlappyScene extends Phaser.Scene {
         leaderboardStr += `${medal} ${index + 1}. ${item.name || 'Anonymous'} - ${item.score}\n`;
       });
 
-      const scoresText = this.add.text(0, -50, leaderboardStr, {
-        fontSize: this.getResponsiveFontSize(20),
+    const scoresText = this.add.text(0, -10, leaderboardStr, {
+      fontSize: this.getResponsiveFontSize(isMobile ? 26 : 22),
         color: '#ffffff',
         fontFamily: this.getFontFamily(),
         stroke: '#000000',
