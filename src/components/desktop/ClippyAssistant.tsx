@@ -13,6 +13,7 @@ const PUNCH_TRIGGER_CLICK = 3;
 const HIT_AT_MS = 800;
 const FLY_AWAY_MS = 900;
 const BITS_RENDER_WIDTH = 220;
+const BOINK_SOUND = '/sounds/boink.mp3';
 
 function loadTips(t: (key: string) => string, max = 50): string[] {
   const tips: string[] = [];
@@ -127,7 +128,11 @@ const ClippyAssistant: React.FC<Props> = ({
   const [tipClicks, setTipClicks] = useState(0);
   const [phase, setPhase] = useState<Phase>('tips');
   const [chargeActive, setChargeActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
   const timeouts = useRef<number[]>([]);
+  const boinkAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => () => {
     timeouts.current.forEach((id) => clearTimeout(id));
@@ -135,13 +140,40 @@ const ClippyAssistant: React.FC<Props> = ({
   }, []);
 
   useEffect(() => {
+    const a = new Audio(BOINK_SOUND);
+    a.preload = 'auto';
+    boinkAudioRef.current = a;
+    return () => {
+      a.pause();
+      boinkAudioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     if (tips.length <= 0) return;
     setTipIndex((i) => i % tips.length);
   }, [tips.length]);
 
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const clearTimers = () => {
     timeouts.current.forEach((id) => clearTimeout(id));
     timeouts.current = [];
+  };
+
+  const playBoink = () => {
+    const a = boinkAudioRef.current;
+    if (!a) return;
+    try {
+      a.currentTime = 0;
+      void a.play();
+    } catch {
+      // Ignore playback errors from browser autoplay policies.
+    }
   };
 
   const startPunchSequence = () => {
@@ -151,7 +183,10 @@ const ClippyAssistant: React.FC<Props> = ({
     setChargeActive(false);
 
     const t0 = window.setTimeout(() => setChargeActive(true), 20);
-    const t1 = window.setTimeout(() => setPhase('hit'), HIT_AT_MS);
+    const t1 = window.setTimeout(() => {
+      setPhase('hit');
+      playBoink();
+    }, HIT_AT_MS);
     const t2 = window.setTimeout(() => setPhase('bits'), HIT_AT_MS + FLY_AWAY_MS);
     timeouts.current.push(t0, t1, t2);
   };
@@ -186,6 +221,7 @@ const ClippyAssistant: React.FC<Props> = ({
   const showChargingBits = phase === 'charge';
   const showFinalBits = phase === 'bits';
   const isInteractive = phase === 'tips';
+  const chargeStartLeft = isMobile ? '12px' : 'calc(62% - 110px)';
 
   const noteText = phase === 'bits' ? MONOLOG : (tips[tipIndex] ?? DEFAULT_TIPS[0]);
   const showNote = phase === 'bits' || (phase === 'tips' && showTip && tips.length > 0);
@@ -197,7 +233,7 @@ const ClippyAssistant: React.FC<Props> = ({
           className="absolute pointer-events-none select-none"
           style={{
             zIndex: 60,
-            left: chargeActive ? `calc(100% - ${rightOffset + 270}px)` : 'calc(62% - 110px)',
+            left: chargeActive ? `calc(100% - ${rightOffset + 270}px)` : chargeStartLeft,
             ...(centered ? { top: '50%', transform: 'translateY(-50%)' } : { bottom: bottomOffset + 12 }),
             transition: `left ${HIT_AT_MS}ms linear`,
             imageRendering: 'pixelated',
